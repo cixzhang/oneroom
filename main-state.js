@@ -18,6 +18,8 @@ var mainState = {
       // Here we create the game
       game.stage.backgroundColor = '#3598db';
 
+      game.world.setBounds(0, 0, 1920, 1920);
+
 
       // Start the Arcade physics system (for movements and collisions)
       game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -26,6 +28,7 @@ var mainState = {
       this.cursor = game.input.keyboard.createCursorKeys();
       this.player = game.add.sprite(70, 100, 'player');
 
+      game.camera.follow(this.player, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
     },
 
     update: function() {
