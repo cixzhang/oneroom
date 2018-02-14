@@ -1,12 +1,13 @@
-/* globals Phaser _ game */
+/* globals Phaser _ game utils*/
 /* eslint no-console: 0 */
 
 var mainState = {
     preload: function() {
       // Here we preload the assets
-      game.load.tilemap('tilemap', 'assets/test_tilemap.json', null, Phaser.Tilemap.TILED_JSON);
-      game.load.image('tiles', 'assets/sprites/test_tileset.png');
-
+      game.load.tilemap('tilemap', 'assets/tilemap_main.json', null, Phaser.Tilemap.TILED_JSON);
+      game.load.image('tiles', 'assets/sprites/tileset_main.png');
+      game.load.image('player', 'assets/sprites/base.png');
+      game.load.image('tree', 'assets/sprites/tree.png');
       game.load.image('home', 'assets/sprites/home_full.png');
       game.load.image('npc1', 'assets/sprites/npc1.png');
       game.load.image('npc2', 'assets/sprites/npc2.png');
@@ -26,21 +27,21 @@ var mainState = {
       game.stage.backgroundColor = '#3598db';
       game.world.setBounds(0, 0, 1920, 1920);
 
-
       // Start the Arcade physics system (for movements and collisions)
       game.physics.startSystem(Phaser.Physics.ARCADE);
       game.world.enableBody = true;
 
       // load the tilemap
       this.map = game.add.tilemap('tilemap');
-      this.map.addTilesetImage('test_tileset', 'tiles');
+      this.map.addTilesetImage('tileset_main_16_16', 'tiles');
+      this.map.addTilesetImage('tileset_main_16_32', 'tiles');
 
       this.backgroundLayer1 = this.map.createLayer('tile1');
       this.backgroundLayer2 = this.map.createLayer('tile2');
       this.collisionLayer = this.map.createLayer('blocker');
 
-      //Before you can use the collide function you need to set what tiles can collide
-      this.map.setCollisionBetween(1, 200, true, 'blocker');
+      // collide with these tiles
+      this.map.setCollisionBetween(1, 2000, true, 'blocker');
 
       // sets the size of the game world, doesn't affect the canvas...
       this.collisionLayer.resizeWorld();
@@ -61,6 +62,14 @@ var mainState = {
         game.physics.enable(npc, Phaser.Physics.ARCADE);
       });
       game.camera.follow(this.player, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
+
+      // resources
+      this.resourceHolders = game.add.group()
+      this.resourceHolders.enableBody = true;
+      createResources(this.resourceHolders, this.map);
+      this.resourceHolders.children.forEach((sprite) => {
+        sprite.body.immovable = true;
+      });
     },
 
     update: function() {
@@ -72,6 +81,10 @@ var mainState = {
 
       this.player.body.velocity.x = 0;
       this.player.body.velocity.y = 0;
+
+      // resource collection
+      game.physics.arcade.collide(this.player, this.resourceHolders);
+      // game.physics.arcade.overlap(this.player, this.resourceHolders, this.collect, null, this);
 
       if (this.cursor.left.isDown) {
         this.player.body.velocity.x = -200;
@@ -126,5 +139,16 @@ var mainState = {
         if (npc.y > bottom) npc.y = bottom;
       });
     },
+
+    collect() {
+      console.log('collecting resource');
+    },
 };
 
+// adds resources to the group
+const createResources = (group, map) => {
+  result = findObjectsByType('tree', map, 'resource');
+  result.forEach((element) => {
+    createFromTiledObject(element, group);
+  });
+};
