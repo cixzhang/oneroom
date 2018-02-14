@@ -66,7 +66,9 @@ var mainState = {
     update: function() {
       // Here we update the game 60 times per second
       game.physics.arcade.collide(this.player, this.collisionLayer);
-      this.updateMomentum();
+      this.updateNPCs(this.npcs);
+      this.updateMomentum(this.npcs, this.player);
+      this.clampNPCs(this.npcs, 3, 53, 3, 32);
 
       this.player.body.velocity.x = 0;
       this.player.body.velocity.y = 0;
@@ -90,12 +92,38 @@ var mainState = {
       return Math.round(a + Math.random() * (b-a));
     },
 
-    updateMomentum: function() {
-      const vX = this.player.body.velocity.x;
-      const vY = this.player.body.velocity.y;
-      this.npcs.forEach((npc) => {
-        npc.body.velocity.x = -1 * Math.sign(vX) * this.randInt(1, 5);
-        npc.body.velocity.y = -1 * Math.sign(vY) * this.randInt(1, 5);
+    updateMomentum: function(npcs, home) {
+      const vX = home.body.velocity.x;
+      const vY = home.body.velocity.y;
+      npcs.forEach((npc) => {
+        npc.body.velocity.x = -1 * Math.sign(vX) * this.randInt(1, 5) + (npc._intentionX || 0);
+        npc.body.velocity.y = -1 * Math.sign(vY) * this.randInt(1, 5) + (npc._intentionY || 0);
+      });
+    },
+
+    updateNPCs: function(npcs) {
+      const time = Date.now();
+      npcs.forEach((npc) => {
+        // TODO: better NPC AI
+        const willCheckUpdate = !npc._lastUpdate || ((npc._lastUpdate + 2000) < time);
+        const willUpdate = willCheckUpdate && Math.random() > 0.3;
+
+
+        if (willUpdate) {
+          npc._lastUpdate = time;
+          const move = Math.random() > 0.4;
+          npc._intentionX = move ? this.randInt(-20, 20) : 0;
+          npc._intentionY = move ? this.randInt(-20, 20) : 0;
+        }
+      });
+    },
+
+    clampNPCs: function(npcs, left, right, top, bottom) {
+      npcs.forEach((npc) => {
+        if (npc.x < left) npc.x = left;
+        if (npc.x > right) npc.x = right;
+        if (npc.y < top) npc.y = top;
+        if (npc.y > bottom) npc.y = bottom;
       });
     },
 };
