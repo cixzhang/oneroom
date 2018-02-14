@@ -14,6 +14,10 @@ var mainState = {
       game.load.image('npc3', 'assets/sprites/npc3.png');
       game.load.image('npc4', 'assets/sprites/npc4.png');
 
+      game.load.image('title', 'assets/sprites/title.png');
+      game.load.spritesheet('black', 'assets/sprites/black.png', 1, 1);
+
+
       // game scaling
       game.scale.scaleMode = Phaser.ScaleManager.USER_SCALE;
       game.scale.setUserScale(3, 3);
@@ -24,7 +28,7 @@ var mainState = {
 
     create: function() {
       // Here we create the game
-      game.stage.backgroundColor = '#3598db';
+      game.stage.backgroundColor = '#ffffff';
       game.world.setBounds(0, 0, 1920, 1920);
 
       // Start the Arcade physics system (for movements and collisions)
@@ -39,6 +43,11 @@ var mainState = {
       this.backgroundLayer1 = this.map.createLayer('tile1');
       this.backgroundLayer2 = this.map.createLayer('tile2');
       this.collisionLayer = this.map.createLayer('blocker');
+      this.bgLayers = [
+        this.backgroundLayer1,
+        this.backgroundLayer2,
+        this.collisionLayer,
+      ];
 
       // collide with these tiles
       this.map.setCollisionBetween(1, 2000, true, 'blocker');
@@ -49,7 +58,7 @@ var mainState = {
       // player
       this.cursor = game.input.keyboard.createCursorKeys();
 
-      this.player = game.add.sprite(70, 100, 'home');
+      this.player = game.add.sprite(100, 100, 'home');
       this.npcs = [
         new Phaser.Sprite(game, 30, 20, 'npc1'),
         new Phaser.Sprite(game, 30, 20, 'npc2'),
@@ -63,6 +72,10 @@ var mainState = {
       });
       game.camera.follow(this.player, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
 
+      // health
+      this.health = 100;
+      this.healthBounds = [75, 50, 25, 0];
+
       // resources
       this.resourceHolders = game.add.group()
       this.resourceHolders.enableBody = true;
@@ -70,6 +83,22 @@ var mainState = {
       this.resourceHolders.children.forEach((sprite) => {
         sprite.body.immovable = true;
       });
+
+      // Game Start
+      this.state = 'title';
+      this.title = game.add.sprite(0, 0, 'title');
+      this.title.alpha = 0;
+
+      this.bgLayers.forEach(layer => layer.alpha = 0);
+
+      this.black = game.add.sprite(0, 0, 'black', 0);
+      this.black.width = game.width * 5;
+      this.black.height = game.height * 5;
+      game.add.tween(this.black).to({ alpha: 0 }, 500, Phaser.Easing.Linear.None, true, 800)
+        .onComplete.addOnce(() => {
+          game.add.tween(this.title).to({ alpha: 1 }, 500, Phaser.Easing.Linear.None, true, 0)
+            .onComplete.addOnce(() => { this.canPlay = true; });
+          });
     },
 
     update: function() {
@@ -81,6 +110,20 @@ var mainState = {
 
       this.player.body.velocity.x = 0;
       this.player.body.velocity.y = 0;
+
+      if (this.state === 'title') {
+        game.add.tween(this.title).to({ alpha: 1 }, 500, Phaser.Easing.Linear.None, true, 0);
+        if (this.cursor.up.isDown) {
+          this.state = 'play';
+          game.add.tween(this.title).to({ alpha: 0 }, 500, Phaser.Easing.Linear.None, true, 0);
+          this.bgLayers.forEach(layer => {
+            game.add.tween(layer).to({ alpha: 1 }, 500, Phaser.Easing.Linear.None, true, 0);
+          });
+        }
+      }
+
+      if (this.state !== 'play') return;
+
 
       // resource collection
       game.physics.arcade.collide(this.player, this.resourceHolders);
@@ -98,6 +141,18 @@ var mainState = {
       }
       else if (this.cursor.down.isDown) {
         this.player.body.velocity.y = 200;
+      }
+
+      // Check health
+      const checkHealth = this.healthBounds[0];
+      if (this.health < checkHealth) {
+        this.healthBounds.shift();
+        const dyingNPC = this.npc[this.healthBounds.length];
+        this.killNPC(dyingNPC);
+      }
+
+      if (!this.healthBounds.length) {
+        this.handleEnd(false);
       }
     },
 
@@ -119,7 +174,7 @@ var mainState = {
       npcs.forEach((npc) => {
         // TODO: better NPC AI
         const willCheckUpdate = !npc._lastUpdate || ((npc._lastUpdate + 2000) < time);
-        const willUpdate = willCheckUpdate && Math.random() > 0.3;
+        const willUpdate = !npc._isDead && willCheckUpdate && Math.random() > 0.3;
 
 
         if (willUpdate) {
@@ -140,8 +195,24 @@ var mainState = {
       });
     },
 
+    killNPC: function(npc) {
+      npc._isDead = true;
+      npc._intentionX = 0;
+      npc._intentionY = 0;
+      npc.rotation = Math.PI;
+      npc.x += 8;
+      npc.y += 16;
+      npc.tint = 0x000000;
+    },
+
     collect() {
       console.log('collecting resource');
+    },
+
+    handleEnd(win) {
+      // TODO: win/lose message
+      game.add.tween(this.black).to({ alpha: 1 }, 4000, Phaser.Easing.Linear.None, true, 0)
+                  .onComplete.addOnce(() => { game.state.start('credit'); });
     },
 };
 
