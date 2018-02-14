@@ -8,6 +8,11 @@ var mainState = {
       game.load.image('tiles', 'assets/sprites/tileset_main.png');
       game.load.image('player', 'assets/sprites/base.png');
       game.load.image('tree', 'assets/sprites/tree.png');
+      game.load.image('home', 'assets/sprites/home_full.png');
+      game.load.image('npc1', 'assets/sprites/npc1.png');
+      game.load.image('npc2', 'assets/sprites/npc2.png');
+      game.load.image('npc3', 'assets/sprites/npc3.png');
+      game.load.image('npc4', 'assets/sprites/npc4.png');
 
       // game scaling
       game.scale.scaleMode = Phaser.ScaleManager.USER_SCALE;
@@ -43,7 +48,19 @@ var mainState = {
 
       // player
       this.cursor = game.input.keyboard.createCursorKeys();
-      this.player = game.add.sprite(70, 100, 'player');
+
+      this.player = game.add.sprite(70, 100, 'home');
+      this.npcs = [
+        new Phaser.Sprite(game, 30, 20, 'npc1'),
+        new Phaser.Sprite(game, 30, 20, 'npc2'),
+        new Phaser.Sprite(game, 30, 20, 'npc3'),
+        new Phaser.Sprite(game, 30, 20, 'npc4'),
+      ];
+
+      this.npcs.forEach((npc) => {
+        this.player.addChild(npc);
+        game.physics.enable(npc, Phaser.Physics.ARCADE);
+      });
       game.camera.follow(this.player, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
 
       // resources
@@ -58,25 +75,69 @@ var mainState = {
     update: function() {
       // Here we update the game 60 times per second
       game.physics.arcade.collide(this.player, this.collisionLayer);
+      this.updateNPCs(this.npcs);
+      this.updateMomentum(this.npcs, this.player);
+      this.clampNPCs(this.npcs, 3, 53, 3, 32);
+
+      this.player.body.velocity.x = 0;
+      this.player.body.velocity.y = 0;
 
       // resource collection
       game.physics.arcade.collide(this.player, this.resourceHolders);
       // game.physics.arcade.overlap(this.player, this.resourceHolders, this.collect, null, this);
 
-      if (this.cursor.left.isDown)
+      if (this.cursor.left.isDown) {
         this.player.body.velocity.x = -200;
-      else if (this.cursor.right.isDown)
+      }
+      else if (this.cursor.right.isDown) {
         this.player.body.velocity.x = 200;
-      else
-        this.player.body.velocity.x = 0;
+      }
 
-
-      if (this.cursor.up.isDown)
+      if (this.cursor.up.isDown) {
         this.player.body.velocity.y = -200;
-      else if (this.cursor.down.isDown)
+      }
+      else if (this.cursor.down.isDown) {
         this.player.body.velocity.y = 200;
-      else
-        this.player.body.velocity.y = 0;
+      }
+    },
+
+    randInt: function(a, b) {
+      return Math.round(a + Math.random() * (b-a));
+    },
+
+    updateMomentum: function(npcs, home) {
+      const vX = home.body.velocity.x;
+      const vY = home.body.velocity.y;
+      npcs.forEach((npc) => {
+        npc.body.velocity.x = -1 * Math.sign(vX) * this.randInt(1, 5) + (npc._intentionX || 0);
+        npc.body.velocity.y = -1 * Math.sign(vY) * this.randInt(1, 5) + (npc._intentionY || 0);
+      });
+    },
+
+    updateNPCs: function(npcs) {
+      const time = Date.now();
+      npcs.forEach((npc) => {
+        // TODO: better NPC AI
+        const willCheckUpdate = !npc._lastUpdate || ((npc._lastUpdate + 2000) < time);
+        const willUpdate = willCheckUpdate && Math.random() > 0.3;
+
+
+        if (willUpdate) {
+          npc._lastUpdate = time;
+          const move = Math.random() > 0.4;
+          npc._intentionX = move ? this.randInt(-20, 20) : 0;
+          npc._intentionY = move ? this.randInt(-20, 20) : 0;
+        }
+      });
+    },
+
+    clampNPCs: function(npcs, left, right, top, bottom) {
+      npcs.forEach((npc) => {
+        if (npc.x < left) npc.x = left;
+        if (npc.x > right) npc.x = right;
+        if (npc.y < top) npc.y = top;
+        if (npc.y > bottom) npc.y = bottom;
+      });
     },
 
     collect() {
