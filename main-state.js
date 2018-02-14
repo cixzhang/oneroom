@@ -6,7 +6,7 @@ var mainState = {
       // Here we preload the assets
       game.load.tilemap('tilemap', 'assets/test_tilemap.json', null, Phaser.Tilemap.TILED_JSON);
       game.load.image('tiles', 'assets/sprites/test_tileset.png');
-      game.load.image('player', 'assets/sprites/base.png');
+      game.load.image('player', 'assets/sprites/home_full.png');
 
       // game scaling
       game.scale.scaleMode = Phaser.ScaleManager.USER_SCALE;
