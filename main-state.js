@@ -6,7 +6,12 @@ var mainState = {
       // Here we preload the assets
       game.load.tilemap('tilemap', 'assets/test_tilemap.json', null, Phaser.Tilemap.TILED_JSON);
       game.load.image('tiles', 'assets/sprites/test_tileset.png');
-      game.load.image('player', 'assets/sprites/home_full.png');
+
+      game.load.image('home', 'assets/sprites/home_full.png');
+      game.load.image('npc1', 'assets/sprites/npc1.png');
+      game.load.image('npc2', 'assets/sprites/npc2.png');
+      game.load.image('npc3', 'assets/sprites/npc3.png');
+      game.load.image('npc4', 'assets/sprites/npc4.png');
 
       // game scaling
       game.scale.scaleMode = Phaser.ScaleManager.USER_SCALE;
@@ -42,7 +47,19 @@ var mainState = {
 
       // player
       this.cursor = game.input.keyboard.createCursorKeys();
-      this.player = game.add.sprite(70, 100, 'player');
+
+      this.player = game.add.sprite(70, 100, 'home');
+      this.npcs = [
+        new Phaser.Sprite(game, 30, 20, 'npc1'),
+        new Phaser.Sprite(game, 30, 20, 'npc2'),
+        new Phaser.Sprite(game, 30, 20, 'npc3'),
+        new Phaser.Sprite(game, 30, 20, 'npc4'),
+      ];
+
+      this.npcs.forEach((npc) => {
+        this.player.addChild(npc);
+        game.physics.enable(npc, Phaser.Physics.ARCADE);
+      });
       game.camera.follow(this.player, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
     },
 
@@ -50,20 +67,35 @@ var mainState = {
       // Here we update the game 60 times per second
       game.physics.arcade.collide(this.player, this.collisionLayer);
 
-      if (this.cursor.left.isDown)
-        this.player.body.velocity.x = -200;
-      else if (this.cursor.right.isDown)
-        this.player.body.velocity.x = 200;
-      else
-        this.player.body.velocity.x = 0;
+      this.npcs.forEach(npc => npc.body.velocity.x = 0);
+      this.npcs.forEach(npc => npc.body.velocity.y = 0);
+      this.player.body.velocity.x = 0;
+      this.player.body.velocity.y = 0;
 
+      if (this.cursor.left.isDown) {
+        this.moveHome('x', -200);
+      }
+      else if (this.cursor.right.isDown) {
+        this.moveHome('x', 200);
+      }
 
-      if (this.cursor.up.isDown)
-        this.player.body.velocity.y = -200;
-      else if (this.cursor.down.isDown)
-        this.player.body.velocity.y = 200;
-      else
-        this.player.body.velocity.y = 0;
+      if (this.cursor.up.isDown) {
+        this.moveHome('y', -200);
+      }
+      else if (this.cursor.down.isDown) {
+        this.moveHome('y', 200);
+      }
+    },
+
+    randInt: function(a, b) {
+      return Math.round(a + Math.random() * (b-a));
+    },
+
+    moveHome: function(direction, speed) {
+      this.player.body.velocity[direction] = speed;
+      if (speed) {
+        this.npcs.forEach(npc => npc.body.velocity[direction] = -1 * Math.sign(speed) * this.randInt(1, 5));
+      }
     },
 };
 
