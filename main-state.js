@@ -66,24 +66,23 @@ var mainState = {
     update: function() {
       // Here we update the game 60 times per second
       game.physics.arcade.collide(this.player, this.collisionLayer);
+      this.updateMomentum();
 
-      this.npcs.forEach(npc => npc.body.velocity.x = 0);
-      this.npcs.forEach(npc => npc.body.velocity.y = 0);
       this.player.body.velocity.x = 0;
       this.player.body.velocity.y = 0;
 
       if (this.cursor.left.isDown) {
-        this.moveHome('x', -200);
+        this.player.body.velocity.x = -200;
       }
       else if (this.cursor.right.isDown) {
-        this.moveHome('x', 200);
+        this.player.body.velocity.x = 200;
       }
 
       if (this.cursor.up.isDown) {
-        this.moveHome('y', -200);
+        this.player.body.velocity.y = -200;
       }
       else if (this.cursor.down.isDown) {
-        this.moveHome('y', 200);
+        this.player.body.velocity.y = 200;
       }
     },
 
@@ -91,11 +90,13 @@ var mainState = {
       return Math.round(a + Math.random() * (b-a));
     },
 
-    moveHome: function(direction, speed) {
-      this.player.body.velocity[direction] = speed;
-      if (speed) {
-        this.npcs.forEach(npc => npc.body.velocity[direction] = -1 * Math.sign(speed) * this.randInt(1, 5));
-      }
+    updateMomentum: function() {
+      const vX = this.player.body.velocity.x;
+      const vY = this.player.body.velocity.y;
+      this.npcs.forEach((npc) => {
+        npc.body.velocity.x = -1 * Math.sign(vX) * this.randInt(1, 5);
+        npc.body.velocity.y = -1 * Math.sign(vY) * this.randInt(1, 5);
+      });
     },
 };
 
