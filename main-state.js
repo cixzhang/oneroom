@@ -43,11 +43,18 @@ var mainState = {
       this.backgroundLayer1 = this.map.createLayer('tile1');
       this.backgroundLayer2 = this.map.createLayer('tile2');
       this.collisionLayer = this.map.createLayer('blocker');
-      this.bgLayers = [
+      this.hiddenAtIntro = [
         this.backgroundLayer1,
         this.backgroundLayer2,
         this.collisionLayer,
       ];
+
+      // Title Screen
+      this.state = 'title';
+      this.title = game.add.sprite(0, 0, 'title');
+      this.title.alpha = 0;
+
+      this.hiddenAtIntro.forEach(layer => layer.alpha = 0);
 
       // collide with these tiles
       this.map.setCollisionBetween(1, 2000, true, 'blocker');
@@ -73,8 +80,8 @@ var mainState = {
       game.camera.follow(this.player, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
 
       // health
-      this.health = 100;
-      this.healthBounds = [75, 50, 25, 0];
+      this.humanHealth = 100;
+      this.humanHealthBounds = [75, 50, 25, 0];
 
       // resources
       this.resourceHolders = game.add.group()
@@ -84,13 +91,7 @@ var mainState = {
         sprite.body.immovable = true;
       });
 
-      // Game Start
-      this.state = 'title';
-      this.title = game.add.sprite(0, 0, 'title');
-      this.title.alpha = 0;
-
-      this.bgLayers.forEach(layer => layer.alpha = 0);
-
+      // Curtains
       this.black = game.add.sprite(0, 0, 'black', 0);
       this.black.width = game.width * 5;
       this.black.height = game.height * 5;
@@ -111,12 +112,13 @@ var mainState = {
       this.player.body.velocity.x = 0;
       this.player.body.velocity.y = 0;
 
+      if (!this.canPlay) return;
       if (this.state === 'title') {
         game.add.tween(this.title).to({ alpha: 1 }, 500, Phaser.Easing.Linear.None, true, 0);
         if (this.cursor.up.isDown) {
           this.state = 'play';
           game.add.tween(this.title).to({ alpha: 0 }, 500, Phaser.Easing.Linear.None, true, 0);
-          this.bgLayers.forEach(layer => {
+          this.hiddenAtIntro.forEach(layer => {
             game.add.tween(layer).to({ alpha: 1 }, 500, Phaser.Easing.Linear.None, true, 0);
           });
         }
@@ -143,21 +145,35 @@ var mainState = {
         this.player.body.velocity.y = 200;
       }
 
-      // Check health
-      const checkHealth = this.healthBounds[0];
-      if (this.health < checkHealth) {
-        this.healthBounds.shift();
-        const dyingNPC = this.npc[this.healthBounds.length];
-        this.killNPC(dyingNPC);
-      }
-
-      if (!this.healthBounds.length) {
-        this.handleEnd(false);
-      }
+      this.updateHumanHealth();
     },
 
     randInt: function(a, b) {
       return Math.round(a + Math.random() * (b-a));
+    },
+
+    updateHumanHealth: function() {
+      const time = Date.now();
+      this.humanHealthUpdateCheck = 500; // Check every half second
+      this.humanHealthUpdateTime = this.humanHealthUpdateTime || Date.now();
+
+      if (time > this.humanHealthUpdateTime + this.humanHealthUpdateCheck) {
+        // TODO: update health depending on resources, consume resources here, too.
+        this.humanHealth = this.humanHealth - 1;
+        this.humanHealthUpdateTime = time;
+
+        // Check health
+        const checkHealth = this.humanHealthBounds[0];
+        if (this.humanHealth < checkHealth) {
+          this.humanHealthBounds.shift();
+          const dyingNPC = this.npcs[this.humanHealthBounds.length];
+          this.killNPC(dyingNPC);
+        }
+
+        if (!this.humanHealthBounds.length) {
+          this.handleEnd(false);
+        }
+      }
     },
 
     updateMomentum: function(npcs, home) {
@@ -188,6 +204,7 @@ var mainState = {
 
     clampNPCs: function(npcs, left, right, top, bottom) {
       npcs.forEach((npc) => {
+        if (npc._isDead) return;
         if (npc.x < left) npc.x = left;
         if (npc.x > right) npc.x = right;
         if (npc.y < top) npc.y = top;
@@ -199,10 +216,15 @@ var mainState = {
       npc._isDead = true;
       npc._intentionX = 0;
       npc._intentionY = 0;
-      npc.rotation = Math.PI;
-      npc.x += 8;
-      npc.y += 16;
-      npc.tint = 0x000000;
+
+      game.add.tween(npc.scale).to({
+        x: 1, y: -1,
+      }, 500, Phaser.Easing.Linear.None, true, 0);
+
+      game.add.tween(npc).to({
+        y: npc.y + 24,
+        tint: 0x000000,
+      }, 500, Phaser.Easing.Linear.None, true, 0);
     },
 
     collect() {
