@@ -6,7 +6,6 @@ var mainState = {
       // Here we preload the assets
       game.load.tilemap('tilemap', 'assets/tilemap_main.json', null, Phaser.Tilemap.TILED_JSON);
       game.load.image('tiles', 'assets/sprites/tileset_main.png');
-      game.load.image('player', 'assets/sprites/base.png');
       game.load.image('tree', 'assets/sprites/tree.png');
       game.load.image('home', 'assets/sprites/home_full.png');
       game.load.image('npc1', 'assets/sprites/npc1.png');
@@ -16,7 +15,7 @@ var mainState = {
 
       game.load.image('title', 'assets/sprites/title.png');
       game.load.spritesheet('black', 'assets/sprites/black.png', 1, 1);
-
+      game.load.spritesheet('palette', 'assets/sprites/palette.png', 14, 14, 18);
 
       // game scaling
       game.scale.scaleMode = Phaser.ScaleManager.USER_SCALE;
@@ -43,18 +42,11 @@ var mainState = {
       this.backgroundLayer1 = this.map.createLayer('tile1');
       this.backgroundLayer2 = this.map.createLayer('tile2');
       this.collisionLayer = this.map.createLayer('blocker');
-      this.hiddenAtIntro = [
-        this.backgroundLayer1,
-        this.backgroundLayer2,
-        this.collisionLayer,
-      ];
 
       // Title Screen
       this.state = 'title';
       this.title = game.add.sprite(0, 0, 'title');
       this.title.alpha = 0;
-
-      this.hiddenAtIntro.forEach(layer => layer.alpha = 0);
 
       // collide with these tiles
       this.map.setCollisionBetween(1, 2000, true, 'blocker');
@@ -79,16 +71,30 @@ var mainState = {
       });
       game.camera.follow(this.player, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
 
-      // health
-      this.humanHealth = 100;
-      this.humanHealthBounds = [75, 50, 25, 0];
-
       // resources
       this.resourceHolders = game.add.group()
       this.resourceHolders.enableBody = true;
       createResources(this.resourceHolders, this.map);
       this.resourceHolders.children.forEach((sprite) => {
         sprite.body.immovable = true;
+      });
+
+      // Bars
+      this.humanHealth = 100;
+      this.humanHealthBounds = [75, 50, 25, 0];
+      this.humanHealthBoundColors = [5, 1, 14, 10];
+      this.humanHealthBar = game.add.tileSprite(game.width / 4, 4, game.width / 2, 3, 'palette', 11); // darker green
+      this.humanHealthBarAmt = new Phaser.Sprite(game, 1, 1, 'palette', 9); // green
+      this.humanHealthBar.addChild(this.humanHealthBarAmt);
+      this.humanHealthBarAmt.height = 1;
+      this.humanHealthBar.fixedToCamera = true;
+
+      this.humanHealthBoundColors.forEach((colorIndex, i) => {
+        const boundLocation = this.humanHealthBounds[i];
+        const indicator = new Phaser.Sprite(game, this.humanHealthBar.width * boundLocation / 100, 0, 'palette', colorIndex);
+        indicator.height = 3;
+        indicator.width = 1;
+        this.humanHealthBar.addChild(indicator);
       });
 
       // Curtains
@@ -100,6 +106,15 @@ var mainState = {
           game.add.tween(this.title).to({ alpha: 1 }, 500, Phaser.Easing.Linear.None, true, 0)
             .onComplete.addOnce(() => { this.canPlay = true; });
           });
+
+      this.hiddenAtIntro = [
+        this.backgroundLayer1,
+        this.backgroundLayer2,
+        this.collisionLayer,
+        this.humanHealthBar,
+      ];
+
+      this.hiddenAtIntro.forEach(layer => layer.alpha = 0);
     },
 
     update: function() {
@@ -174,6 +189,8 @@ var mainState = {
           this.handleEnd(false);
         }
       }
+
+      this.humanHealthBarAmt.width = (this.humanHealthBar.width - 2) * (this.humanHealth / 100);
     },
 
     updateMomentum: function(npcs, home) {
