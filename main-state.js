@@ -12,6 +12,7 @@ var mainState = {
       game.load.image('npc2', 'assets/sprites/npc2.png');
       game.load.image('npc3', 'assets/sprites/npc3.png');
       game.load.image('npc4', 'assets/sprites/npc4.png');
+      game.load.image('radio', 'assets/sprites/radio.png');
 
       game.load.image('title', 'assets/sprites/title.png');
       game.load.spritesheet('black', 'assets/sprites/black.png', 1, 1);
@@ -64,6 +65,8 @@ var mainState = {
         new Phaser.Sprite(game, 30, 20, 'npc3'),
         new Phaser.Sprite(game, 30, 20, 'npc4'),
       ];
+      this.radio = new Phaser.Sprite(game, 40, 25, 'radio');
+      this.player.addChild(this.radio);
 
       this.npcs.forEach((npc) => {
         this.player.addChild(npc);
