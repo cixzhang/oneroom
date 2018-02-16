@@ -65,7 +65,7 @@ var mainState = {
         new Phaser.Sprite(game, 30, 20, 'npc3'),
         new Phaser.Sprite(game, 30, 20, 'npc4'),
       ];
-      this.radio = new Phaser.Sprite(game, 40, 25, 'radio');
+      this.radio = new Phaser.Sprite(game, 39, 22, 'radio');
       this.player.addChild(this.radio);
 
       this.npcs.forEach((npc) => {
