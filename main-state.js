@@ -70,6 +70,7 @@ var mainState = {
 
       this.npcs.forEach((npc) => {
         this.player.addChild(npc);
+        npc.anchor.setTo(.5, 1);
         game.physics.enable(npc, Phaser.Physics.ARCADE);
       });
       game.camera.follow(this.player, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
@@ -123,9 +124,7 @@ var mainState = {
     update: function() {
       // Here we update the game 60 times per second
       game.physics.arcade.collide(this.player, this.collisionLayer);
-      this.updateNPCs(this.npcs);
-      this.updateMomentum(this.npcs, this.player);
-      this.clampNPCs(this.npcs, 3, 53, 3, 32);
+      this.updateNPCs(this.npcs, this.player);
 
       this.player.body.velocity.x = 0;
       this.player.body.velocity.y = 0;
@@ -196,16 +195,7 @@ var mainState = {
       this.humanHealthBarAmt.width = (this.humanHealthBar.width - 2) * (this.humanHealth / 100);
     },
 
-    updateMomentum: function(npcs, home) {
-      const vX = home.body.velocity.x;
-      const vY = home.body.velocity.y;
-      npcs.forEach((npc) => {
-        npc.body.velocity.x = -1 * Math.sign(vX) * this.randInt(1, 5) + (npc._intentionX || 0);
-        npc.body.velocity.y = -1 * Math.sign(vY) * this.randInt(1, 5) + (npc._intentionY || 0);
-      });
-    },
-
-    updateNPCs: function(npcs) {
+    updateNPCs: function(npcs, home) {
       const time = Date.now();
       npcs.forEach((npc) => {
         // TODO: better NPC AI
@@ -218,13 +208,27 @@ var mainState = {
           const move = Math.random() > 0.4;
           npc._intentionX = move ? this.randInt(-20, 20) : 0;
           npc._intentionY = move ? this.randInt(-20, 20) : 0;
+
+          npc.scale.x = 1;
+          if (npc._intentionX > 0) npc.scale.x = -1;
         }
+      });
+      this.updateMomentum(npcs, home);
+      this.clampNPCs(this.npcs, 6, home.width - 6, 16, home.height - 16);
+    },
+
+    updateMomentum: function(npcs, home) {
+      const vX = home.body.velocity.x;
+      const vY = home.body.velocity.y;
+      npcs.forEach((npc) => {
+        npc.body.velocity.x = -1 * Math.sign(vX) * this.randInt(1, 5) + (npc._intentionX || 0);
+        npc.body.velocity.y = -1 * Math.sign(vY) * this.randInt(1, 5) + (npc._intentionY || 0);
       });
     },
 
+
     clampNPCs: function(npcs, left, right, top, bottom) {
       npcs.forEach((npc) => {
-        if (npc._isDead) return;
         if (npc.x < left) npc.x = left;
         if (npc.x > right) npc.x = right;
         if (npc.y < top) npc.y = top;
@@ -242,7 +246,6 @@ var mainState = {
       }, 500, Phaser.Easing.Linear.None, true, 0);
 
       game.add.tween(npc).to({
-        y: npc.y + 24,
         tint: 0x000000,
       }, 500, Phaser.Easing.Linear.None, true, 0);
     },
