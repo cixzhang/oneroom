@@ -17,6 +17,7 @@ var mainState = {
       game.load.image('title', 'assets/sprites/title.png');
       game.load.spritesheet('black', 'assets/sprites/black.png', 1, 1);
       game.load.spritesheet('palette', 'assets/sprites/palette.png', 14, 14, 18);
+      game.load.spritesheet('resources', 'assets/sprites/resources.png', 16, 16);
 
       // game scaling
       game.scale.scaleMode = Phaser.ScaleManager.USER_SCALE;
@@ -75,13 +76,27 @@ var mainState = {
       });
       game.camera.follow(this.player, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
 
-      // resources
+      // resource holders
       this.resourceHolders = game.add.group()
       this.resourceHolders.enableBody = true;
       createResources(this.resourceHolders, this.map);
       this.resourceHolders.children.forEach((sprite) => {
         sprite.body.immovable = true;
       });
+
+      // resources
+      // TODO: have resources spawn from destroyed resourceHolders
+      this.resources = game.add.group()
+      this.resources.enableBody = true;
+      this.food = this.resources.create(50, 50, 'resources');
+      this.food.frame = 3;
+      this.food.lastFrame = 0;
+      this.wood = this.resources.create(10, 10, 'resources');
+      this.wood.frame = 4;
+      this.wood.lastFrame = 1;
+      this.metal = this.resources.create(160, 160, 'resources');
+      this.metal.lastFrame = 2;
+      this.metal.frame = 5;
 
       // Bars
       this.humanHealth = 100;
@@ -116,13 +131,22 @@ var mainState = {
         this.backgroundLayer2,
         this.collisionLayer,
         this.humanHealthBar,
+        this.resources,
       ];
 
       this.hiddenAtIntro.forEach(layer => layer.alpha = 0);
+      this.lastTime = Date.now();
+      this.frame = 0;
     },
 
     update: function() {
-      // Here we update the game 60 times per second
+      // TODO: put this in its own function
+      this.time = Date.now();
+      if (this.time - this.lastTime > 14) {
+        this.frame++;
+        this.lastTime = this.time;
+      }
+
       game.physics.arcade.collide(this.player, this.collisionLayer);
       this.updateNPCs(this.npcs, this.player);
 
@@ -143,6 +167,14 @@ var mainState = {
 
       if (this.state !== 'play') return;
 
+      // make the resources flash
+      this.resources.forEach((resource) => {
+        if (this.frame % 16 == 0) {
+          tmp = resource.lastFrame;
+          resource.lastFrame = resource.frame;
+          resource.frame = tmp;
+        }
+      });
 
       // resource collection
       game.physics.arcade.collide(this.player, this.resourceHolders);
