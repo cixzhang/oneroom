@@ -116,6 +116,12 @@ var mainState = {
         this.humanHealthBar.addChild(indicator);
       });
 
+      this.collectedResources = {
+        food: 10,
+        wood: 0,
+        metal: 0,
+      };
+
       // Curtains
       this.black = game.add.sprite(0, 0, 'black', 0);
       this.black.width = game.width * 5;
@@ -195,27 +201,46 @@ var mainState = {
       }
 
       this.updateHumanHealth();
+      this.updateFood();
     },
 
     randInt: function(a, b) {
       return Math.round(a + Math.random() * (b-a));
     },
 
+    updateFood: function() {
+      const time = Date.now();
+      const foodUpdateCheck = 2000 / this.humanHealthBounds.length;
+
+      this.foodUpdateTime = this.foodUpdateTime || time;
+
+      if (time > this.foodUpdateTime + foodUpdateCheck) {
+        this.foodUpdateTime = time;
+        this.collectedResources.food = Math.max(this.collectedResources.food - 1, 0);
+        console.log('Food:', this.collectedResources.food);
+      }
+    },
+
     updateHumanHealth: function() {
       const time = Date.now();
-      this.humanHealthUpdateCheck = 500; // Check every half second
-      this.humanHealthUpdateTime = this.humanHealthUpdateTime || Date.now();
+
+      this.humanHealthUpdateCheck = 1000; // Check every second
+      this.humanHealthUpdateTime = this.humanHealthUpdateTime || time;
 
       if (time > this.humanHealthUpdateTime + this.humanHealthUpdateCheck) {
-        // TODO: update health depending on resources, consume resources here, too.
-        this.humanHealth = this.humanHealth - 1;
         this.humanHealthUpdateTime = time;
+        const dyingNPC = this.npcs[this.humanHealthBounds.length - 1];
+
+        // Going hungry
+        if (!this.collectedResources.food) {
+          this.humanHealth -= 1;
+          this.hurtNPC(dyingNPC);
+        }
 
         // Check health
         const checkHealth = this.humanHealthBounds[0];
         if (this.humanHealth < checkHealth) {
           this.humanHealthBounds.shift();
-          const dyingNPC = this.npcs[this.humanHealthBounds.length];
           this.killNPC(dyingNPC);
         }
 
@@ -266,6 +291,14 @@ var mainState = {
         if (npc.y < top) npc.y = top;
         if (npc.y > bottom) npc.y = bottom;
       });
+    },
+
+    hurtNPC: function(npc) {
+      game.add.tween(npc).to({ tint: 0xFF0000 }, 250, Phaser.Easing.Linear.None, true, 0)
+        .onComplete.addOnce(() => {
+          if (npc._isDead) return;
+          game.add.tween(npc).to({ tint: 0xFFFFFF }, 250, Phaser.Easing.Linear.None, true, 0);
+        });
     },
 
     killNPC: function(npc) {
