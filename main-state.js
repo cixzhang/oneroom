@@ -93,6 +93,7 @@ var mainState = {
       // resources
       this.resources = game.add.group()
       this.resources.enableBody = true;
+      this.resources.physicsBodyType = Phaser.Physics.ARCADE;
 
       // resource holders
       this.resourceHolders = game.add.group()
@@ -187,6 +188,14 @@ var mainState = {
           tmp = resource.lastFrame;
           resource.lastFrame = resource.frame;
           resource.frame = tmp;
+        }
+        
+        if (resource.body.velocity.x !== 0 || resource.body.velocity.y !== 0) {
+          resource.framesAlive++;
+          if (resource.framesAlive > 32) {
+            resource.body.velocity.x = 0;
+            resource.body.velocity.y = 0;
+          }
         }
       });
 
@@ -352,10 +361,13 @@ var mainState = {
 
     // used for destroying resources...we'll make this better soon
     destroyOther: function(player, other) {
-      window.setTimeout(() => {
-        other.onDestroy(other, 'wood', 1);
-        other.kill();
-      }, 1000);
+      if (!other.destroying) {
+        window.setTimeout(() => {
+          other.onDestroy(other, 'wood', 4);
+          other.kill();
+        }, 250);
+        other.destroying = true;
+      }
     },
 
     dropResources(callingSprite, resourceType, number) {
@@ -365,11 +377,21 @@ var mainState = {
         metal: [4,5]
       };
 
+      originX = callingSprite.centerX;
+      originY = callingSprite.centerY;
+
       // TODO: spawn multiple around the area
-      resource = this.resources.create(callingSprite.x, callingSprite.y, 'resources');
-      resource.kind = resourceType;
-      resource.frame = resourceMap[resourceType][0];
-      resource.lastFrame = resourceMap[resourceType][1];
+      for (i = 0; i < number; i++) {
+        velocityX = this.randInt(-80, 80);
+        velocityY = this.randInt(-80, 80);
+        resource = this.resources.create(originX, originY, 'resources');
+        resource.kind = resourceType;
+        resource.frame = resourceMap[resourceType][0];
+        resource.lastFrame = resourceMap[resourceType][1];
+        resource.body.velocity.x = velocityX;
+        resource.body.velocity.y = velocityY;
+        resource.framesAlive = 0;
+      }
     },
 
     collectResource() {
