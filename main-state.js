@@ -18,6 +18,7 @@ var mainState = {
       game.load.spritesheet('black', 'assets/sprites/black.png', 1, 1);
       game.load.spritesheet('palette', 'assets/sprites/palette.png', 14, 14, 18);
       game.load.spritesheet('resources', 'assets/sprites/resources.png', 16, 16);
+      game.load.spritesheet('leg', 'assets/sprites/walk.png', 24, 16, 4);
 
       // game scaling
       game.scale.scaleMode = Phaser.ScaleManager.USER_SCALE;
@@ -59,6 +60,19 @@ var mainState = {
       // player
       this.cursor = game.input.keyboard.createCursorKeys();
 
+      this.legs = [
+        game.add.sprite(-32, -32, 'leg', 0),
+        game.add.sprite(-32, -32, 'leg', 0),
+        game.add.sprite(-32, -32, 'leg', 0),
+        game.add.sprite(-32, -32, 'leg', 0),
+      ];
+      this.legs.forEach((leg) => {
+        leg.anchor.setTo(0, .5);
+        leg.animations.add('forward0', [0, 1, 2, 3]);
+        leg.animations.add('forward1', [3, 0, 1, 2]);
+        leg.animations.add('backward0', [3, 2, 1, 0]);
+        leg.animations.add('backward1', [2, 1, 0, 3]);
+      });
       this.player = game.add.sprite(100, 100, 'home');
       this.npcs = [
         new Phaser.Sprite(game, 30, 20, 'npc1'),
@@ -138,6 +152,7 @@ var mainState = {
         this.collisionLayer,
         this.humanHealthBar,
         this.resources,
+        ...this.legs,
       ];
 
       this.hiddenAtIntro.forEach(layer => layer.alpha = 0);
@@ -200,12 +215,40 @@ var mainState = {
         this.player.body.velocity.y = 200;
       }
 
+      this.updateLegs(this.legs, this.player);
       this.updateHumanHealth();
       this.updateFood();
     },
 
     randInt: function(a, b) {
       return Math.round(a + Math.random() * (b-a));
+    },
+
+    updateLegs: function(legs, home) {
+      const legProps = [
+        { x: 3, y: 8, scaleX: -1 },
+        { x: 3, y: home.height - 4, scaleX: -1 },
+        { x: home.width - 3, y: home.height - 4, scaleX: 1 },
+        { x: home.width - 3, y: 8, scaleX: 1 },
+      ];
+
+      const vX = home.body.velocity.x;
+      const vY = home.body.velocity.y;
+
+      legs.forEach((leg, i) => {
+        leg.x = home.x + legProps[i].x + vX / 60;
+        leg.y = home.y + legProps[i].y + vY / 60;
+        leg.scale.x = legProps[i].scaleX;
+
+        if (vX || vY) {
+          let direction = 'forward';
+          let motion = '0';
+          if (i < 2 && vX > 0) direction = 'backward';
+          if ((i == 0 || i == 3) && vY > 0) direction = 'backward';
+          if (i % 2) motion = '1';
+          leg.animations.play(direction + motion, 6);
+        }
+      });
     },
 
     updateFood: function() {
