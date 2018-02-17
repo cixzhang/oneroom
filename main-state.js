@@ -90,27 +90,19 @@ var mainState = {
       });
       game.camera.follow(this.player, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
 
+      // resources
+      this.resources = game.add.group()
+      this.resources.enableBody = true;
+
       // resource holders
       this.resourceHolders = game.add.group()
       this.resourceHolders.enableBody = true;
-      createResources(this.resourceHolders, this.map);
+      createResourceHolders(this.resourceHolders, this.map);
       this.resourceHolders.children.forEach((sprite) => {
         sprite.body.immovable = true;
+        // this is ugly...if you have any other ideas, please let me know
+        sprite.onDestroy = this.dropResources.bind(this);
       });
-
-      // resources
-      // TODO: have resources spawn from destroyed resourceHolders
-      this.resources = game.add.group()
-      this.resources.enableBody = true;
-      this.food = this.resources.create(50, 50, 'resources');
-      this.food.frame = 3;
-      this.food.lastFrame = 0;
-      this.wood = this.resources.create(10, 10, 'resources');
-      this.wood.frame = 4;
-      this.wood.lastFrame = 1;
-      this.metal = this.resources.create(160, 160, 'resources');
-      this.metal.lastFrame = 2;
-      this.metal.frame = 5;
 
       // Bars
       this.humanHealth = 100;
@@ -188,6 +180,7 @@ var mainState = {
 
       if (this.state !== 'play') return;
 
+      // TODO: make this just a sprite animation
       // make the resources flash
       this.resources.forEach((resource) => {
         if (this.frame % 16 == 0) {
@@ -198,21 +191,21 @@ var mainState = {
       });
 
       // resource collection
-      game.physics.arcade.collide(this.player, this.resourceHolders);
-      // game.physics.arcade.overlap(this.player, this.resourceHolders, this.collect, null, this);
+      //game.physics.arcade.collide(this.player, this.resourceHolders);
+      game.physics.arcade.collide(this.player, this.resourceHolders, this.destroyOther);
 
       if (this.cursor.left.isDown) {
-        this.player.body.velocity.x = -200;
+        this.player.body.velocity.x = -100;
       }
       else if (this.cursor.right.isDown) {
-        this.player.body.velocity.x = 200;
+        this.player.body.velocity.x = 100;
       }
 
       if (this.cursor.up.isDown) {
-        this.player.body.velocity.y = -200;
+        this.player.body.velocity.y = -100;
       }
       else if (this.cursor.down.isDown) {
-        this.player.body.velocity.y = 200;
+        this.player.body.velocity.y = 100;
       }
 
       this.updateLegs(this.legs, this.player);
@@ -326,7 +319,6 @@ var mainState = {
       });
     },
 
-
     clampNPCs: function(npcs, left, right, top, bottom) {
       npcs.forEach((npc) => {
         if (npc.x < left) npc.x = left;
@@ -358,7 +350,29 @@ var mainState = {
       }, 500, Phaser.Easing.Linear.None, true, 0);
     },
 
-    collect() {
+    // used for destroying resources...we'll make this better soon
+    destroyOther: function(player, other) {
+      window.setTimeout(() => {
+        other.onDestroy(other, 'wood', 1);
+        other.kill();
+      }, 1000);
+    },
+
+    dropResources(callingSprite, resourceType, number) {
+      const resourceMap = {
+        food: [0,1],
+        wood: [2,3],
+        metal: [4,5]
+      };
+
+      // TODO: spawn multiple around the area
+      resource = this.resources.create(callingSprite.x, callingSprite.y, 'resources');
+      resource.kind = resourceType;
+      resource.frame = resourceMap[resourceType][0];
+      resource.lastFrame = resourceMap[resourceType][1];
+    },
+
+    collectResource() {
       console.log('collecting resource');
     },
 
@@ -370,7 +384,7 @@ var mainState = {
 };
 
 // adds resources to the group
-const createResources = (group, map) => {
+const createResourceHolders = (group, map) => {
   result = findObjectsByType('tree', map, 'resource');
   result.forEach((element) => {
     createFromTiledObject(element, group);
