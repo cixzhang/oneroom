@@ -35,7 +35,7 @@
                  "name":"tree",
                  "properties":
                     {
-                     "resource":"tree",
+                     "resource":"wood",
                      "spriteKey":"tree"
                     },
                  "propertytypes":
@@ -57,7 +57,7 @@
                  "name":"tree",
                  "properties":
                     {
-                     "resource":"tree",
+                     "resource":"wood",
                      "spriteKey":"tree"
                     },
                  "propertytypes":
@@ -79,7 +79,7 @@
                  "name":"tree",
                  "properties":
                     {
-                     "resource":"tree",
+                     "resource":"wood",
                      "spriteKey":"tree"
                     },
                  "propertytypes":
@@ -101,7 +101,7 @@
                  "name":"tree",
                  "properties":
                     {
-                     "resource":"tree",
+                     "resource":"wood",
                      "spriteKey":"tree"
                     },
                  "propertytypes":
@@ -115,6 +115,94 @@
                  "width":16,
                  "x":96,
                  "y":256
+                }, 
+                {
+                 "gid":473,
+                 "height":16,
+                 "id":39,
+                 "name":"cow",
+                 "properties":
+                    {
+                     "resource":"food",
+                     "spriteKey":"cow"
+                    },
+                 "propertytypes":
+                    {
+                     "resource":"string",
+                     "spriteKey":"string"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":32,
+                 "x":112,
+                 "y":416
+                }, 
+                {
+                 "gid":473,
+                 "height":16,
+                 "id":41,
+                 "name":"cow",
+                 "properties":
+                    {
+                     "resource":"food",
+                     "spriteKey":"cow"
+                    },
+                 "propertytypes":
+                    {
+                     "resource":"string",
+                     "spriteKey":"string"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":32,
+                 "x":176,
+                 "y":480
+                }, 
+                {
+                 "gid":473,
+                 "height":16,
+                 "id":42,
+                 "name":"cow",
+                 "properties":
+                    {
+                     "resource":"food",
+                     "spriteKey":"cow"
+                    },
+                 "propertytypes":
+                    {
+                     "resource":"string",
+                     "spriteKey":"string"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":32,
+                 "x":256,
+                 "y":432
+                }, 
+                {
+                 "gid":473,
+                 "height":16,
+                 "id":43,
+                 "name":"cow",
+                 "properties":
+                    {
+                     "resource":"food",
+                     "spriteKey":"cow"
+                    },
+                 "propertytypes":
+                    {
+                     "resource":"string",
+                     "spriteKey":"string"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":32,
+                 "x":64,
+                 "y":480
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -134,7 +222,7 @@
          "x":0,
          "y":0
         }],
- "nextobjectid":39,
+ "nextobjectid":44,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.0.2",
@@ -165,6 +253,19 @@
          "tilecount":128,
          "tileheight":32,
          "tilewidth":16
+        }, 
+        {
+         "columns":8,
+         "firstgid":385,
+         "image":"sprites\/tileset_main.png",
+         "imageheight":256,
+         "imagewidth":256,
+         "margin":0,
+         "name":"tileset_main_32_16",
+         "spacing":0,
+         "tilecount":128,
+         "tileheight":16,
+         "tilewidth":32
         }],
  "tilewidth":16,
  "type":"map",

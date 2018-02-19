@@ -10,6 +10,7 @@ var mainState = {
       game.load.tilemap('tilemap', 'assets/tilemap_main.json', null, Phaser.Tilemap.TILED_JSON);
       game.load.image('tiles', 'assets/sprites/tileset_main.png');
       game.load.image('tree', 'assets/sprites/tree.png');
+      game.load.spritesheet('cow', 'assets/sprites/cow.png', 32, 16, 2);
       game.load.image('home', 'assets/sprites/home_full.png');
       game.load.image('npc1', 'assets/sprites/npc1.png');
       game.load.image('npc2', 'assets/sprites/npc2.png');
@@ -25,6 +26,9 @@ var mainState = {
 
       // sounds
       game.load.audio('collect', 'assets/sound/collect.wav');
+      game.load.audio('walk1', 'assets/sound/walk1.wav');
+      game.load.audio('walk2', 'assets/sound/walk2.wav');
+      game.load.audio('moo', 'assets/sound/moo.wav');
 
       // game scaling
       game.scale.scaleMode = Phaser.ScaleManager.USER_SCALE;
@@ -157,6 +161,19 @@ var mainState = {
       this.hiddenAtIntro.forEach(layer => layer.alpha = 0);
       this.lastTime = Date.now();
       this.frame = 0;
+
+      // register any sounds needed
+      this.walkSound = soundManager.add('walk1', 0.7);
+      this.walkSound2 = soundManager.add('walk2', 0.7);
+      this.walkSounds = [this.walkSound, this.walkSound2];
+      this.walkSoundIndex = 0;
+      this.walkSounds.forEach((sound) => {
+        sound.onStop.add(() => {
+          this.walkSoundIndex = (this.walkSoundIndex + 1) % 2;
+        });
+      });
+      this.mooSound = soundManager.add('moo');
+
     },
 
     update: function() {
@@ -187,7 +204,16 @@ var mainState = {
 
       if (this.state !== 'play') return;
 
+      // update resource holders (function?)
+      this.resourceHolders.forEach((resourceHolder) => {
+        const freq = this.randInt(500, 1200);
+        if (resourceHolder.spriteKey === 'cow' && this.frame % freq == 0 && !this.mooSound.isPlaying) {
+          this.mooSound.play();
+        }
+      });
+
       // update resources function?
+      // this could just be a tween
       this.resources.forEach((resource) => {
         if (resource.body.velocity.x !== 0 || resource.body.velocity.y !== 0) {
           resource.framesAlive++;
@@ -248,6 +274,10 @@ var mainState = {
           if (i < 2 && vX > 0) direction = 'backward';
           if ((i == 0 || i == 3) && vY > 0) direction = 'backward';
           if (i % 2) motion = '1';
+          if (!this.walkSounds[this.walkSoundIndex].isPlaying) {
+            this.walkSounds[this.walkSoundIndex].play();
+
+          }
           leg.animations.play(direction + motion, 6);
         }
       });
@@ -363,7 +393,7 @@ var mainState = {
     destroyOther: function(player, other) {
       if (!other.destroying) {
         window.setTimeout(() => {
-          other.onDestroy(other, 'wood', 4);
+          other.onDestroy(other, other.resource, 4);
           other.kill();
         }, 250);
         other.destroying = true;
@@ -383,7 +413,7 @@ var mainState = {
       for (i = 0; i < number; i++) {
         resource = this.resources.create(originX, originY, 'resources');
         resource.kind = resourceType;
-        resource.animations.add('flash', resourceMap[resourceType], 8, true);
+        resource.animations.add('flash', resourceMap[resourceType], 4, true);
         resource.body.velocity.x = this.randInt(-80, 80);
         resource.body.velocity.y = this.randInt(-80, 80);
         resource.framesAlive = 0;
@@ -422,7 +452,11 @@ var mainState = {
 
 // adds resources to the group
 const createResourceHolders = (group, map) => {
-  result = findObjectsByType('tree', map, 'resource');
+  let result = [];
+  let trees = findObjectsByType('tree', map, 'resource');
+  let cows = findObjectsByType('cow', map, 'resource');
+  result = result.concat(trees);
+  result = result.concat(cows);
   result.forEach((element) => {
     createFromTiledObject(element, group);
   });
