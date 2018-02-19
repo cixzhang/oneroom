@@ -1,9 +1,12 @@
 /* globals Phaser _ game utils*/
 /* eslint no-console: 0 */
 
+// constants/globals go here
+const RESOURCE_VALUE = 5;
+
 var mainState = {
     preload: function() {
-      // Here we preload the assets
+      // sprites
       game.load.tilemap('tilemap', 'assets/tilemap_main.json', null, Phaser.Tilemap.TILED_JSON);
       game.load.image('tiles', 'assets/sprites/tileset_main.png');
       game.load.image('tree', 'assets/sprites/tree.png');
@@ -19,6 +22,9 @@ var mainState = {
       game.load.spritesheet('palette', 'assets/sprites/palette.png', 14, 14, 18);
       game.load.spritesheet('resources', 'assets/sprites/resources.png', 16, 16);
       game.load.spritesheet('leg', 'assets/sprites/walk.png', 24, 16, 4);
+
+      // sounds
+      game.load.audio('collect', 'assets/sound/collect.wav');
 
       // game scaling
       game.scale.scaleMode = Phaser.ScaleManager.USER_SCALE;
@@ -181,15 +187,8 @@ var mainState = {
 
       if (this.state !== 'play') return;
 
-      // TODO: make this just a sprite animation
-      // make the resources flash
+      // update resources function?
       this.resources.forEach((resource) => {
-        if (this.frame % 16 == 0) {
-          tmp = resource.lastFrame;
-          resource.lastFrame = resource.frame;
-          resource.frame = tmp;
-        }
-        
         if (resource.body.velocity.x !== 0 || resource.body.velocity.y !== 0) {
           resource.framesAlive++;
           if (resource.framesAlive > 32) {
@@ -199,9 +198,10 @@ var mainState = {
         }
       });
 
-      // resource collection
-      //game.physics.arcade.collide(this.player, this.resourceHolders);
+      // resourceHolder destruction
       game.physics.arcade.collide(this.player, this.resourceHolders, this.destroyOther);
+      // resource collection
+      game.physics.arcade.overlap(this.player, this.resources, this.collectResource);
 
       if (this.cursor.left.isDown) {
         this.player.body.velocity.x = -100;
@@ -370,7 +370,7 @@ var mainState = {
       }
     },
 
-    dropResources(callingSprite, resourceType, number) {
+    dropResources: function(callingSprite, resourceType, number) {
       const resourceMap = {
         food: [0,1],
         wood: [2,3],
@@ -380,22 +380,37 @@ var mainState = {
       originX = callingSprite.centerX;
       originY = callingSprite.centerY;
 
-      // TODO: spawn multiple around the area
       for (i = 0; i < number; i++) {
-        velocityX = this.randInt(-80, 80);
-        velocityY = this.randInt(-80, 80);
         resource = this.resources.create(originX, originY, 'resources');
         resource.kind = resourceType;
-        resource.frame = resourceMap[resourceType][0];
-        resource.lastFrame = resourceMap[resourceType][1];
-        resource.body.velocity.x = velocityX;
-        resource.body.velocity.y = velocityY;
+        resource.animations.add('flash', resourceMap[resourceType], 8, true);
+        resource.body.velocity.x = this.randInt(-80, 80);
+        resource.body.velocity.y = this.randInt(-80, 80);
         resource.framesAlive = 0;
+        resource.animations.play('flash');
       }
     },
 
-    collectResource() {
-      console.log('collecting resource');
+    collectResource: function(player, resource) {
+      if (!resource.destroying) {
+        const resourceTween = game.add.tween(resource);
+        resourceTween.onComplete.add((obj, tween) => {
+          resource.animations.add('collect', [6,7,8,9], 30, false);
+          const collectAnimation = resource.animations.play('collect');
+          mainState.collectedResources[resource.kind] += RESOURCE_VALUE;
+          soundManager.play('collect');
+          player.tint = '0xd7e894';
+          collectAnimation.onComplete.add((resource) => {
+            resource.kill();
+            player.tint = '0xffffff';
+          }, this);
+        }, this);
+        resourceTween.to( {
+          x: player.body.center.x - 8,
+          y: player.body.center.y - 8,
+        }, 200, Phaser.Easing.Cubic.None, true);
+      }
+      resource.destroying = true;
     },
 
     handleEnd(win) {
