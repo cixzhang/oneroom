@@ -31,81 +31,17 @@
                 {
                  "gid":257,
                  "height":32,
-                 "id":35,
-                 "name":"tree",
-                 "properties":
-                    {
-                     "resource":"wood",
-                     "spriteKey":"tree"
-                    },
-                 "propertytypes":
-                    {
-                     "resource":"string",
-                     "spriteKey":"string"
-                    },
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":16,
-                 "x":288,
-                 "y":224
-                }, 
-                {
-                 "gid":257,
-                 "height":32,
-                 "id":36,
-                 "name":"tree",
-                 "properties":
-                    {
-                     "resource":"wood",
-                     "spriteKey":"tree"
-                    },
-                 "propertytypes":
-                    {
-                     "resource":"string",
-                     "spriteKey":"string"
-                    },
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":16,
-                 "x":400,
-                 "y":144
-                }, 
-                {
-                 "gid":257,
-                 "height":32,
-                 "id":37,
-                 "name":"tree",
-                 "properties":
-                    {
-                     "resource":"wood",
-                     "spriteKey":"tree"
-                    },
-                 "propertytypes":
-                    {
-                     "resource":"string",
-                     "spriteKey":"string"
-                    },
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":16,
-                 "x":384,
-                 "y":320
-                }, 
-                {
-                 "gid":257,
-                 "height":32,
                  "id":38,
                  "name":"tree",
                  "properties":
                     {
+                     "health":30,
                      "resource":"wood",
                      "spriteKey":"tree"
                     },
                  "propertytypes":
                     {
+                     "health":"int",
                      "resource":"string",
                      "spriteKey":"string"
                     },
@@ -119,81 +55,17 @@
                 {
                  "gid":473,
                  "height":16,
-                 "id":39,
-                 "name":"cow",
-                 "properties":
-                    {
-                     "resource":"food",
-                     "spriteKey":"cow"
-                    },
-                 "propertytypes":
-                    {
-                     "resource":"string",
-                     "spriteKey":"string"
-                    },
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":32,
-                 "x":112,
-                 "y":416
-                }, 
-                {
-                 "gid":473,
-                 "height":16,
-                 "id":41,
-                 "name":"cow",
-                 "properties":
-                    {
-                     "resource":"food",
-                     "spriteKey":"cow"
-                    },
-                 "propertytypes":
-                    {
-                     "resource":"string",
-                     "spriteKey":"string"
-                    },
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":32,
-                 "x":176,
-                 "y":480
-                }, 
-                {
-                 "gid":473,
-                 "height":16,
-                 "id":42,
-                 "name":"cow",
-                 "properties":
-                    {
-                     "resource":"food",
-                     "spriteKey":"cow"
-                    },
-                 "propertytypes":
-                    {
-                     "resource":"string",
-                     "spriteKey":"string"
-                    },
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":32,
-                 "x":256,
-                 "y":432
-                }, 
-                {
-                 "gid":473,
-                 "height":16,
                  "id":43,
                  "name":"cow",
                  "properties":
                     {
+                     "health":20,
                      "resource":"food",
                      "spriteKey":"cow"
                     },
                  "propertytypes":
                     {
+                     "health":"int",
                      "resource":"string",
                      "spriteKey":"string"
                     },
@@ -202,6 +74,150 @@
                  "visible":true,
                  "width":32,
                  "x":64,
+                 "y":480
+                }, 
+                {
+                 "gid":473,
+                 "height":16,
+                 "id":45,
+                 "name":"cow",
+                 "properties":
+                    {
+                     "health":20,
+                     "resource":"food",
+                     "spriteKey":"cow"
+                    },
+                 "propertytypes":
+                    {
+                     "health":"int",
+                     "resource":"string",
+                     "spriteKey":"string"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":32,
+                 "x":112,
+                 "y":432
+                }, 
+                {
+                 "gid":257,
+                 "height":32,
+                 "id":47,
+                 "name":"tree",
+                 "properties":
+                    {
+                     "health":30,
+                     "resource":"wood",
+                     "spriteKey":"tree"
+                    },
+                 "propertytypes":
+                    {
+                     "health":"int",
+                     "resource":"string",
+                     "spriteKey":"string"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":16,
+                 "x":400,
+                 "y":448
+                }, 
+                {
+                 "gid":257,
+                 "height":32,
+                 "id":48,
+                 "name":"tree",
+                 "properties":
+                    {
+                     "health":30,
+                     "resource":"wood",
+                     "spriteKey":"tree"
+                    },
+                 "propertytypes":
+                    {
+                     "health":"int",
+                     "resource":"string",
+                     "spriteKey":"string"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":16,
+                 "x":192,
+                 "y":128
+                }, 
+                {
+                 "gid":257,
+                 "height":32,
+                 "id":49,
+                 "name":"tree",
+                 "properties":
+                    {
+                     "health":30,
+                     "resource":"wood",
+                     "spriteKey":"tree"
+                    },
+                 "propertytypes":
+                    {
+                     "health":"int",
+                     "resource":"string",
+                     "spriteKey":"string"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":16,
+                 "x":368,
+                 "y":128
+                }, 
+                {
+                 "gid":257,
+                 "height":32,
+                 "id":50,
+                 "name":"tree",
+                 "properties":
+                    {
+                     "health":30,
+                     "resource":"wood",
+                     "spriteKey":"tree"
+                    },
+                 "propertytypes":
+                    {
+                     "health":"int",
+                     "resource":"string",
+                     "spriteKey":"string"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":16,
+                 "x":416,
+                 "y":256
+                }, 
+                {
+                 "gid":473,
+                 "height":16,
+                 "id":51,
+                 "name":"cow",
+                 "properties":
+                    {
+                     "health":20,
+                     "resource":"food",
+                     "spriteKey":"cow"
+                    },
+                 "propertytypes":
+                    {
+                     "health":"int",
+                     "resource":"string",
+                     "spriteKey":"string"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":32,
+                 "x":288,
                  "y":480
                 }],
          "opacity":1,
@@ -222,7 +238,7 @@
          "x":0,
          "y":0
         }],
- "nextobjectid":44,
+ "nextobjectid":52,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.0.2",

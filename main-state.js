@@ -130,7 +130,8 @@ var mainState = {
       this.playerBullets.enableBody = true;
       this.playerBullets.sprite = 'bullet';
       this.playerBullets.fireSprite = 'fire';
-      this.playerBullets.velocity = 500;
+      this.playerBullets.velocity = 600;
+      this.playerBullets.damage = 10;
 
 
       // Bars
@@ -225,6 +226,9 @@ var mainState = {
 
       // update resource holders (function?)
       this.resourceHolders.forEach((resourceHolder) => {
+        if (resourceHolder.health <= 0) {
+          resourceHolder.onDestroy(resourceHolder, resourceHolder.resource, 4);
+        }
         const freq = this.randInt(500, 1200);
         if (resourceHolder.spriteKey === 'cow' && this.frame % freq == 0 && !this.mooSound.isPlaying) {
           this.mooSound.play();
@@ -232,7 +236,7 @@ var mainState = {
       });
 
       // resourceHolder destruction
-      game.physics.arcade.collide(this.player, this.resourceHolders, this.destroyOther);
+      game.physics.arcade.overlap(this.playerBullets, this.resourceHolders, this.damageOther, null, this);
       // resource collection
       game.physics.arcade.overlap(this.player, this.resources, this.collectResource);
 
@@ -401,15 +405,9 @@ var mainState = {
       }, 500, Phaser.Easing.Linear.None, true, 0);
     },
 
-    // used for destroying resources...we'll make this better soon
-    destroyOther: function(player, other) {
-      if (!other.destroying) {
-        window.setTimeout(() => {
-          other.onDestroy(other, other.resource, 4);
-          other.destroy();
-        }, 250);
-        other.destroying = true;
-      }
+    damageOther: function(bullet, other) {
+      other.health -= bullet.damage;
+      bullet.kill();
     },
 
     dropResources: function(callingSprite, resourceType, number) {
@@ -432,6 +430,7 @@ var mainState = {
           y: this.randInt(resource.y - 50, resource.y + 50),
         }, 200, Phaser.Easing.Linear.None, true);
       }
+      callingSprite.destroy();
     },
 
     collectResource: function(player, resource) {
@@ -513,6 +512,7 @@ var mainState = {
           height: startingHeight + 60,
         }, 200, Phaser.Easing.Linear.None, true);
         bullet.angle = angle + 90;
+        bullet.damage = bulletGroup.damage;
         game.physics.arcade.velocityFromAngle(angle, bulletGroup.velocity, bullet.body.velocity);
         callingSprite.nextFire = callingSprite.fireWaitTime;
       }
