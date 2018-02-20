@@ -23,12 +23,16 @@ var mainState = {
       game.load.spritesheet('palette', 'assets/sprites/palette.png', 14, 14, 18);
       game.load.spritesheet('resources', 'assets/sprites/resources.png', 16, 16);
       game.load.spritesheet('leg', 'assets/sprites/walk.png', 24, 16, 4);
+      game.load.image('bullet', 'assets/sprites/bullet.png');
+      game.load.spritesheet('fire', 'assets/sprites/fire.png', 8, 16, 12);
+
 
       // sounds
       game.load.audio('collect', 'assets/sound/collect.wav');
       game.load.audio('walk1', 'assets/sound/walk1.wav');
       game.load.audio('walk2', 'assets/sound/walk2.wav');
       game.load.audio('moo', 'assets/sound/moo.wav');
+      game.load.audio('gun', 'assets/sound/gun.wav');
 
       // game scaling
       game.scale.scaleMode = Phaser.ScaleManager.USER_SCALE;
@@ -68,7 +72,11 @@ var mainState = {
       this.collisionLayer.resizeWorld();
 
       // player
-      this.cursor = game.input.keyboard.createCursorKeys();
+      this.keys = game.input.keyboard.createCursorKeys();
+      this.keys.w = game.input.keyboard.addKey(Phaser.Keyboard.W);
+      this.keys.s = game.input.keyboard.addKey(Phaser.Keyboard.S);
+      this.keys.d = game.input.keyboard.addKey(Phaser.Keyboard.D);
+      this.keys.a = game.input.keyboard.addKey(Phaser.Keyboard.A);
 
       this.legs = [
         game.add.sprite(-32, -32, 'leg', 0),
@@ -99,14 +107,16 @@ var mainState = {
         game.physics.enable(npc, Phaser.Physics.ARCADE);
       });
       game.camera.follow(this.player, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
+      this.player.fireWaitTime = 15;
+      this.player.nextFire = 0;
 
       // resources
-      this.resources = game.add.group()
+      this.resources = game.add.group();
       this.resources.enableBody = true;
       this.resources.physicsBodyType = Phaser.Physics.ARCADE;
 
       // resource holders
-      this.resourceHolders = game.add.group()
+      this.resourceHolders = game.add.group();
       this.resourceHolders.enableBody = true;
       createResourceHolders(this.resourceHolders, this.map);
       this.resourceHolders.children.forEach((sprite) => {
@@ -114,6 +124,14 @@ var mainState = {
         // this is ugly...if you have any other ideas, please let me know
         sprite.onDestroy = this.dropResources.bind(this);
       });
+
+      // projectiles
+      this.playerBullets = game.add.group();
+      this.playerBullets.enableBody = true;
+      this.playerBullets.sprite = 'bullet';
+      this.playerBullets.fireSprite = 'fire';
+      this.playerBullets.velocity = 500;
+
 
       // Bars
       this.humanHealth = 100;
@@ -189,11 +207,12 @@ var mainState = {
 
       this.player.body.velocity.x = 0;
       this.player.body.velocity.y = 0;
+      if (this.player.nextFire > 0) this.player.nextFire--;
 
       if (!this.canPlay) return;
       if (this.state === 'title') {
         game.add.tween(this.title).to({ alpha: 1 }, 500, Phaser.Easing.Linear.None, true, 0);
-        if (this.cursor.up.isDown) {
+        if (this.keys.up.isDown) {
           this.state = 'play';
           game.add.tween(this.title).to({ alpha: 0 }, 500, Phaser.Easing.Linear.None, true, 0);
           this.hiddenAtIntro.forEach(layer => {
@@ -212,40 +231,33 @@ var mainState = {
         }
       });
 
-      // update resources function?
-      // this could just be a tween
-      this.resources.forEach((resource) => {
-        if (resource.body.velocity.x !== 0 || resource.body.velocity.y !== 0) {
-          resource.framesAlive++;
-          if (resource.framesAlive > 32) {
-            resource.body.velocity.x = 0;
-            resource.body.velocity.y = 0;
-          }
-        }
-      });
-
       // resourceHolder destruction
       game.physics.arcade.collide(this.player, this.resourceHolders, this.destroyOther);
       // resource collection
       game.physics.arcade.overlap(this.player, this.resources, this.collectResource);
 
-      if (this.cursor.left.isDown) {
+      if (this.keys.left.isDown) {
         this.player.body.velocity.x = -100;
       }
-      else if (this.cursor.right.isDown) {
+      else if (this.keys.right.isDown) {
         this.player.body.velocity.x = 100;
       }
 
-      if (this.cursor.up.isDown) {
+      if (this.keys.up.isDown) {
         this.player.body.velocity.y = -100;
       }
-      else if (this.cursor.down.isDown) {
+      else if (this.keys.down.isDown) {
         this.player.body.velocity.y = 100;
       }
+
+      // firing keys
+      this.checkFire();
+
 
       this.updateLegs(this.legs, this.player);
       this.updateHumanHealth();
       this.updateFood();
+      this.player.bringToTop();
     },
 
     randInt: function(a, b) {
@@ -394,7 +406,7 @@ var mainState = {
       if (!other.destroying) {
         window.setTimeout(() => {
           other.onDestroy(other, other.resource, 4);
-          other.kill();
+          other.destroy();
         }, 250);
         other.destroying = true;
       }
@@ -414,10 +426,11 @@ var mainState = {
         resource = this.resources.create(originX, originY, 'resources');
         resource.kind = resourceType;
         resource.animations.add('flash', resourceMap[resourceType], 4, true);
-        resource.body.velocity.x = this.randInt(-80, 80);
-        resource.body.velocity.y = this.randInt(-80, 80);
-        resource.framesAlive = 0;
         resource.animations.play('flash');
+        game.add.tween(resource).to({
+          x: this.randInt(resource.x - 50, resource.x + 50),
+          y: this.randInt(resource.y - 50, resource.y + 50),
+        }, 200, Phaser.Easing.Linear.None, true);
       }
     },
 
@@ -431,7 +444,7 @@ var mainState = {
           soundManager.play('collect');
           player.tint = '0xd7e894';
           collectAnimation.onComplete.add((resource) => {
-            resource.kill();
+            resource.destroy();
             player.tint = '0xffffff';
           }, this);
         }, this);
@@ -441,6 +454,68 @@ var mainState = {
         }, 200, Phaser.Easing.Cubic.None, true);
       }
       resource.destroying = true;
+    },
+
+    checkFire: function() {
+      if (this.keys.w.isDown) {
+        if (this.keys.a.isDown) {
+          this.fireBullet(this.player, this.playerBullets, this.player.x - 4, this.player.y - 4, -135);
+        }
+        else if (this.keys.d.isDown) {
+          this.fireBullet(this.player, this.playerBullets, this.player.right + 4, this.player.y - 4, -45);
+        }
+        else {
+          this.fireBullet(this.player, this.playerBullets, this.player.centerX, this.player.y - 4, -90);
+        }
+      }
+      else if (this.keys.s.isDown) {
+        if (this.keys.a.isDown) {
+          this.fireBullet(this.player, this.playerBullets, this.player.x - 4, this.player.bottom + 4, 135);
+        }
+        else if (this.keys.d.isDown) {
+          this.fireBullet(this.player, this.playerBullets, this.player.right + 4, this.player.bottom + 4, 45);
+        }
+        else {
+          this.fireBullet(this.player, this.playerBullets, this.player.centerX, this.player.bottom + 4, 90);
+        }
+      }
+      else if (this.keys.d.isDown) {
+        this.fireBullet(this.player, this.playerBullets, this.player.right + 4, this.player.centerY, 0);
+      }
+      else if (this.keys.a.isDown) {
+        this.fireBullet(this.player, this.playerBullets, this.player.x - 4, this.player.centerY, 180);
+      }
+    },
+
+    fireBullet: function(callingSprite, bulletGroup, x, y, angle) {
+      if (callingSprite.nextFire === 0) {
+        soundManager.play('gun');
+        // slight modification is fun
+        angle = angle + mainState.randInt(-4, 4);
+
+        // firing sprite
+        let fireSprite = game.add.sprite(x, y, bulletGroup.fireSprite);
+        // TODO: see if this animation can live on the group instead
+        fireSprite.animations.add('fire', _.range(12), 30, false);
+        const fireAnimation = fireSprite.animations.play('fire');
+        fireAnimation.onComplete.add((fireSprite) => {
+          fireSprite.destroy();
+        });
+
+        let bullet = bulletGroup.create(x, y, bulletGroup.sprite);
+        fireSprite.alignIn(bullet, Phaser.TOP_CENTER, 2);
+        fireSprite.anchor.setTo(0.5, 0.5);
+        fireSprite.angle = angle + 90;
+        const startingHeight = bullet.height;
+        bullet.height = 64;
+        // make the bullet trail longer over time
+        game.add.tween(bullet).to({
+          height: startingHeight + 60,
+        }, 200, Phaser.Easing.Linear.None, true);
+        bullet.angle = angle + 90;
+        game.physics.arcade.velocityFromAngle(angle, bulletGroup.velocity, bullet.body.velocity);
+        callingSprite.nextFire = callingSprite.fireWaitTime;
+      }
     },
 
     handleEnd(win) {
