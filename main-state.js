@@ -312,6 +312,10 @@ var mainState = {
       }
     },
 
+    healHumanHealth: function() {
+      this.humanHealth = this.humanHealthBounds.length * 25;
+    },
+
     updateHumanHealth: function() {
       const time = Date.now();
 
@@ -324,8 +328,10 @@ var mainState = {
 
         // Going hungry
         if (!this.collectedResources.food) {
-          this.humanHealth -= 1;
+          this.humanHealth -= this.humanHealthBounds.length;
           this.hurtNPC(dyingNPC);
+        } else {
+          this.healHumanHealth();
         }
 
         // Check health
@@ -440,6 +446,7 @@ var mainState = {
           resource.animations.add('collect', [6,7,8,9], 30, false);
           const collectAnimation = resource.animations.play('collect');
           mainState.collectedResources[resource.kind] += RESOURCE_VALUE;
+          if (resource.kind === 'food') mainState.healHumanHealth();
           soundManager.play('collect');
           player.tint = '0xd7e894';
           collectAnimation.onComplete.add((resource) => {
