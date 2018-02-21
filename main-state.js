@@ -20,13 +20,14 @@ var mainState = {
 
       game.load.image('title', 'assets/sprites/title.png');
       game.load.spritesheet('black', 'assets/sprites/black.png', 1, 1);
+      game.load.spritesheet('clear', 'assets/sprites/clear.png', 1, 1);
       game.load.spritesheet('palette', 'assets/sprites/palette.png', 14, 14, 18);
       game.load.spritesheet('resources', 'assets/sprites/resources.png', 16, 16);
       game.load.spritesheet('leg', 'assets/sprites/walk.png', 24, 16, 4);
       game.load.image('bullet', 'assets/sprites/bullet.png');
       game.load.spritesheet('fire', 'assets/sprites/fire.png', 8, 16, 12);
-
-
+      game.load.spritesheet('symbols', 'assets/sprites/symbols.png', 9, 12);
+      game.load.spritesheet('symbols_small', 'assets/sprites/symbols_small.png', 4, 6);
       // sounds
       game.load.audio('collect', 'assets/sound/collect.wav');
       game.load.audio('walk1', 'assets/sound/walk1.wav');
@@ -115,6 +116,27 @@ var mainState = {
       this.resources.enableBody = true;
       this.resources.physicsBodyType = Phaser.Physics.ARCADE;
 
+      this.resourceCounters = new Phaser.Group(game, this.player, 'resourceCounters');
+      this.resourceCounters.x = 3;
+      this.resourceCounters.y = 53;
+
+      const resourceNames = ['food', 'wood', 'metal'];
+      [0, 2, 4].forEach((resource, i) => {
+        const counter = new Phaser.Group(game, this.resourceCounters);
+        const icon = new Phaser.Sprite(game, 0, 0, 'resources', resource);
+        icon.scale.x = 0.25;
+        icon.scale.y = 0.25;
+        counter.addChild(icon);
+        counter.x = 20 * i + 2;
+        counter.y = 2;
+
+        this[resourceNames[i]+'Counter'] = new Phaser.Group(game, counter);
+        this[resourceNames[i]+'Counter'].x = 2;
+        this[resourceNames[i]+'Counter'].y = -2;
+      });
+
+      this.player.addChild(this.resourceCounters);
+
       // resource holders
       this.resourceHolders = game.add.group();
       this.resourceHolders.enableBody = true;
@@ -174,6 +196,7 @@ var mainState = {
         this.collisionLayer,
         this.humanHealthBar,
         this.resources,
+        this.resourceCounters,
         ...this.legs,
       ];
 
@@ -261,11 +284,59 @@ var mainState = {
       this.updateLegs(this.legs, this.player);
       this.updateHumanHealth();
       this.updateFood();
+      this.updateCounters();
       this.player.bringToTop();
     },
 
     randInt: function(a, b) {
       return Math.round(a + Math.random() * (b-a));
+    },
+
+    makeTextSprite: function(text, width, height, color, useSmall) {
+      const sizeX = useSmall ? 4 : 9;
+      const sizeY = useSmall ? 6 : 12;
+      const sheet = useSmall ? 'symbols_small' : 'symbols';
+
+      const getCodeSprite = (char) => {
+        let index = 0;
+        const code = char.charCodeAt(0);
+        if (char === ',') index = 62;
+        else if (char === '.') index = 63;
+        else if (char === '!') index = 64;
+        else if (char === ' ') index = 65;
+        else if (code < 65) {
+          // numerics
+          index = code - 48;
+        }
+        else if (code < 97) {
+          // capital letters
+          index = code - 65 + 10;
+        }
+        else {
+          // lowercase letters
+          index = code - 97 + 10 + 26;
+        }
+        return new Phaser.Sprite(game, 0, 0, sheet, index);
+      };
+
+      const textSprite = new Phaser.TileSprite(game, 0, 0, width, height, 'clear', 0);
+      let currentX = 0;
+      let currentY = 0;
+      String(text).split('').forEach((char) => {
+        const charSprite = getCodeSprite(char);
+        charSprite.tint = color;
+
+        if (currentX + sizeX < width) {
+          currentX += sizeX;
+        } else {
+          currentY += sizeY;
+        }
+
+        charSprite.x = currentX;
+        charSprite.y = currentY;
+        textSprite.addChild(charSprite);
+      });
+      return textSprite;
     },
 
     updateLegs: function(legs, home) {
@@ -308,8 +379,20 @@ var mainState = {
       if (time > this.foodUpdateTime + foodUpdateCheck) {
         this.foodUpdateTime = time;
         this.collectedResources.food = Math.max(this.collectedResources.food - 1, 0);
-        console.log('Food:', this.collectedResources.food);
       }
+    },
+
+    updateCounters: function() {
+      const color = 0xFFFFFF;
+      const width = 24;
+      const height = 12;
+      this.foodCounter.removeChildren();
+      this.woodCounter.removeChildren();
+      this.metalCounter.removeChildren();
+
+      this.foodCounter.addChild(this.makeTextSprite(this.collectedResources.food, width, height, color, true));
+      this.woodCounter.addChild(this.makeTextSprite(this.collectedResources.wood, width, height, color, true));
+      this.metalCounter.addChild(this.makeTextSprite(this.collectedResources.metal, width, height, color, true));
     },
 
     healHumanHealth: function() {
