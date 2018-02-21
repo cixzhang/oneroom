@@ -219,6 +219,78 @@
                  "width":32,
                  "x":288,
                  "y":480
+                }, 
+                {
+                 "gid":529,
+                 "height":32,
+                 "id":52,
+                 "name":"car",
+                 "properties":
+                    {
+                     "health":50,
+                     "resource":"metal",
+                     "spriteKey":"car"
+                    },
+                 "propertytypes":
+                    {
+                     "health":"int",
+                     "resource":"string",
+                     "spriteKey":"string"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":48,
+                 "x":320,
+                 "y":208
+                }, 
+                {
+                 "gid":529,
+                 "height":32,
+                 "id":58,
+                 "name":"car",
+                 "properties":
+                    {
+                     "health":50,
+                     "resource":"metal",
+                     "spriteKey":"car"
+                    },
+                 "propertytypes":
+                    {
+                     "health":"int",
+                     "resource":"string",
+                     "spriteKey":"string"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":48,
+                 "x":32,
+                 "y":304
+                }, 
+                {
+                 "gid":529,
+                 "height":32,
+                 "id":59,
+                 "name":"car",
+                 "properties":
+                    {
+                     "health":50,
+                     "resource":"metal",
+                     "spriteKey":"car"
+                    },
+                 "propertytypes":
+                    {
+                     "health":"int",
+                     "resource":"string",
+                     "spriteKey":"string"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":48,
+                 "x":432,
+                 "y":496
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -238,7 +310,7 @@
          "x":0,
          "y":0
         }],
- "nextobjectid":52,
+ "nextobjectid":60,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.0.2",
@@ -282,6 +354,19 @@
          "tilecount":128,
          "tileheight":16,
          "tilewidth":32
+        }, 
+        {
+         "columns":5,
+         "firstgid":513,
+         "image":"sprites\/tileset_main.png",
+         "imageheight":256,
+         "imagewidth":256,
+         "margin":0,
+         "name":"tileset_main_48_32",
+         "spacing":0,
+         "tilecount":40,
+         "tileheight":32,
+         "tilewidth":48
         }],
  "tilewidth":16,
  "type":"map",

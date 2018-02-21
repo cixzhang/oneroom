@@ -11,6 +11,7 @@ var mainState = {
       game.load.image('tiles', 'assets/sprites/tileset_main.png');
       game.load.image('tree', 'assets/sprites/tree.png');
       game.load.spritesheet('cow', 'assets/sprites/cow.png', 32, 16, 2);
+      game.load.image('car', 'assets/sprites/car.png');
       game.load.image('home', 'assets/sprites/home_full.png');
       game.load.image('npc1', 'assets/sprites/npc1.png');
       game.load.image('npc2', 'assets/sprites/npc2.png');
@@ -150,6 +151,7 @@ var mainState = {
       // projectiles
       this.playerBullets = game.add.group();
       this.playerBullets.enableBody = true;
+      this.playerBullets.physicsBodyType = Phaser.Physics.ARCADE;
       this.playerBullets.sprite = 'bullet';
       this.playerBullets.fireSprite = 'fire';
       this.playerBullets.velocity = 600;
@@ -259,7 +261,7 @@ var mainState = {
       });
 
       // resourceHolder destruction
-      game.physics.arcade.overlap(this.playerBullets, this.resourceHolders, this.damageOther, null, this);
+      game.physics.arcade.overlap(this.playerBullets, this.resourceHolders, this.damageOther);
       // resource collection
       game.physics.arcade.overlap(this.player, this.resources, this.collectResource);
 
@@ -620,8 +622,10 @@ const createResourceHolders = (group, map) => {
   let result = [];
   let trees = findObjectsByType('tree', map, 'resource');
   let cows = findObjectsByType('cow', map, 'resource');
+  let cars = findObjectsByType('car', map, 'resource');
   result = result.concat(trees);
   result = result.concat(cows);
+  result = result.concat(cars);
   result.forEach((element) => {
     createFromTiledObject(element, group);
   });
