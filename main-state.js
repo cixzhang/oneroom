@@ -177,9 +177,9 @@ var mainState = {
       });
 
       this.collectedResources = {
-        food: 10,
+        food: 16,
         wood: 0,
-        metal: 0,
+        metal: 10,
       };
 
       // Curtains
@@ -580,6 +580,11 @@ var mainState = {
 
     fireBullet: function(callingSprite, bulletGroup, x, y, angle) {
       if (callingSprite.nextFire === 0) {
+        if (callingSprite === mainState.player) {
+          // consume metal
+          if (!mainState.collectedResources.metal) return;
+          mainState.collectedResources.metal -= 1;
+        }
         soundManager.play('gun');
         // slight modification is fun
         angle = angle + mainState.randInt(-4, 4);
