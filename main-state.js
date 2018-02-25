@@ -3,6 +3,7 @@
 
 // constants/globals go here
 const RESOURCE_VALUE = 5;
+const ENEMIES_DATA = window.enemies;
 
 var mainState = {
     preload: function() {
@@ -13,6 +14,7 @@ var mainState = {
       game.load.spritesheet('cow', 'assets/sprites/cow.png', 32, 16, 2);
       game.load.image('car', 'assets/sprites/car.png');
       game.load.image('home', 'assets/sprites/home_full.png');
+      game.load.spritesheet('home_sprites', 'assets/sprites/home.png', 8, 8);
       game.load.image('npc1', 'assets/sprites/npc1.png');
       game.load.image('npc2', 'assets/sprites/npc2.png');
       game.load.image('npc3', 'assets/sprites/npc3.png');
@@ -182,6 +184,33 @@ var mainState = {
         metal: 10,
       };
 
+      // Enemies
+      this.enemies = {};
+
+      _.each(ENEMIES_DATA, (enemy, name) => {
+        const width = enemy.map.tileswide * enemy.map.tilewidth;
+        const height = enemy.map.tileshigh * enemy.map.tileheight;
+        const sprite = new Phaser.TileSprite(game, 0, 0, width, height, 'clear', 0);
+        const layers = [];
+        enemy.map.layers.forEach(layer => layers.unshift(layer)); // reversing the layers, not in place!
+        layers.forEach(layer => {
+          layer.tiles.forEach(tile => {
+            // draw each tile
+            if (tile.tile === -1) return;
+            const tSprite = new Phaser.Sprite(game, tile.x * enemy.map.tilewidth, tile.y * enemy.map.tileheight, 'home_sprites', tile.tile);
+            tSprite.anchor.setTo(0.5, 0.5);
+            if (tile.flipX) {
+              tSprite.scale.x = -1;
+            }
+            sprite.addChild(tSprite);
+          });
+        });
+
+        this.enemies[name] = sprite;
+      });
+
+      this.enemy = game.add.tileSprite(0, 0, 0, 0, 'clear', 0);
+
       // Curtains
       this.black = game.add.sprite(0, 0, 'black', 0);
       this.black.width = game.width * 5;
@@ -199,6 +228,7 @@ var mainState = {
         this.humanHealthBar,
         this.resources,
         this.resourceCounters,
+        this.enemy,
         ...this.legs,
       ];
 
@@ -218,6 +248,8 @@ var mainState = {
       });
       this.mooSound = soundManager.add('moo');
 
+      // TESTING
+      this.spawnEnemy(99, 99, 'doghouse');
     },
 
     update: function() {
@@ -254,7 +286,7 @@ var mainState = {
         if (resourceHolder.health <= 0) {
           resourceHolder.onDestroy(resourceHolder, resourceHolder.resource, 4);
         }
-        const freq = this.randInt(500, 1200);
+        const freq = _.random(500, 1200);
         if (resourceHolder.spriteKey === 'cow' && this.frame % freq == 0 && !this.mooSound.isPlaying) {
           this.mooSound.play();
         }
@@ -290,8 +322,22 @@ var mainState = {
       this.player.bringToTop();
     },
 
-    randInt: function(a, b) {
-      return Math.round(a + Math.random() * (b-a));
+    despawnEnemy() {
+      this.enemy.removeChildren();
+      this.enemy.x = 0;
+      this.enemy.y = 0;
+      this.enemy.width = 0;
+      this.enemy.height = 0;
+      this.enemy.spawned = false;
+    },
+
+    spawnEnemy(x, y, enemyName) {
+      this.enemy.addChild(this.enemies[enemyName]);
+      this.enemy.width = this.enemies[enemyName].width;
+      this.enemy.height = this.enemies[enemyName].height;
+      this.enemy.x = x;
+      this.enemy.y = y;
+      this.enemy.spawned = true;
     },
 
     makeTextSprite: function(text, width, height, color, useSmall) {
@@ -445,8 +491,8 @@ var mainState = {
         if (willUpdate) {
           npc._lastUpdate = time;
           const move = Math.random() > 0.4;
-          npc._intentionX = move ? this.randInt(-20, 20) : 0;
-          npc._intentionY = move ? this.randInt(-20, 20) : 0;
+          npc._intentionX = move ? _.random(-20, 20) : 0;
+          npc._intentionY = move ? _.random(-20, 20) : 0;
 
           npc.scale.x = 1;
           if (npc._intentionX > 0) npc.scale.x = -1;
@@ -460,8 +506,8 @@ var mainState = {
       const vX = home.body.velocity.x;
       const vY = home.body.velocity.y;
       npcs.forEach((npc) => {
-        npc.body.velocity.x = -1 * Math.sign(vX) * this.randInt(1, 5) + (npc._intentionX || 0);
-        npc.body.velocity.y = -1 * Math.sign(vY) * this.randInt(1, 5) + (npc._intentionY || 0);
+        npc.body.velocity.x = -1 * Math.sign(vX) * _.random(1, 5) + (npc._intentionX || 0);
+        npc.body.velocity.y = -1 * Math.sign(vY) * _.random(1, 5) + (npc._intentionY || 0);
       });
     },
 
@@ -517,8 +563,8 @@ var mainState = {
         resource.animations.add('flash', resourceMap[resourceType], 4, true);
         resource.animations.play('flash');
         game.add.tween(resource).to({
-          x: this.randInt(resource.x - 50, resource.x + 50),
-          y: this.randInt(resource.y - 50, resource.y + 50),
+          x: _.random(resource.x - 50, resource.x + 50),
+          y: _.random(resource.y - 50, resource.y + 50),
         }, 200, Phaser.Easing.Linear.None, true);
       }
       callingSprite.destroy();
@@ -587,7 +633,7 @@ var mainState = {
         }
         soundManager.play('gun');
         // slight modification is fun
-        angle = angle + mainState.randInt(-4, 4);
+        angle = angle + _.random(-4, 4);
 
         // firing sprite
         let fireSprite = game.add.sprite(x, y, bulletGroup.fireSprite);
