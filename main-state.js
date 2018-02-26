@@ -210,6 +210,20 @@ var mainState = {
       });
 
       this.enemy = game.add.tileSprite(0, 0, 0, 0, 'clear', 0);
+      this.enemy.legs = [
+        game.add.sprite(-32, -32, 'leg', 0),
+        game.add.sprite(-32, -32, 'leg', 0),
+        game.add.sprite(-32, -32, 'leg', 0),
+        game.add.sprite(-32, -32, 'leg', 0),
+      ];
+      this.enemy.legs.forEach((leg) => {
+        leg.anchor.setTo(0, .5);
+        leg.animations.add('forward0', [0, 1, 2, 3]);
+        leg.animations.add('forward1', [3, 0, 1, 2]);
+        leg.animations.add('backward0', [3, 2, 1, 0]);
+        leg.animations.add('backward1', [2, 1, 0, 3]);
+      });
+      this.enemy.bringToTop();
 
       // Curtains
       this.black = game.add.sprite(0, 0, 'black', 0);
@@ -249,7 +263,7 @@ var mainState = {
       this.mooSound = soundManager.add('moo');
 
       // TESTING
-      this.spawnEnemy(99, 99, 'doghouse');
+      this.spawnEnemy(200, 200, 'doghouse');
     },
 
     update: function() {
@@ -261,6 +275,8 @@ var mainState = {
       }
 
       game.physics.arcade.collide(this.player, this.collisionLayer);
+      game.physics.arcade.collide(this.enemy, this.collisionLayer);
+      game.physics.arcade.collide(this.player, this.enemy);
       this.updateNPCs(this.npcs, this.player);
 
       this.player.body.velocity.x = 0;
@@ -319,6 +335,7 @@ var mainState = {
       this.updateHumanHealth();
       this.updateFood();
       this.updateCounters();
+      this.updateEnemy();
       this.player.bringToTop();
     },
 
@@ -337,6 +354,17 @@ var mainState = {
       this.enemy.height = this.enemies[enemyName].height;
       this.enemy.x = x;
       this.enemy.y = y;
+
+      const npcs = ENEMIES_DATA[enemyName].genNPCs();
+
+      this.enemy.npcs = npcs.map(npc => {
+        const sprite = new Phaser.Sprite(game, 7, 1, `npc${npc}`);
+        this.enemy.addChild(sprite);
+        sprite.anchor.setTo(.5, 1);
+        game.physics.enable(sprite, Phaser.Physics.ARCADE);
+        return sprite;
+      });
+      this.enemy.resources = ENEMIES_DATA[enemyName].genResources();
       this.enemy.spawned = true;
     },
 
@@ -480,6 +508,15 @@ var mainState = {
       this.humanHealthBarAmt.width = (this.humanHealthBar.width - 2) * (this.humanHealth / 100);
     },
 
+    updateEnemy: function() {
+      if (!this.enemy.spawned) return;
+      this.updateNPCs(this.enemy.npcs, this.enemy);
+      this.updateLegs(this.enemy.legs, this.enemy);
+      this.enemy.body.velocity.x = 0;
+      this.enemy.body.velocity.y = 0;
+      // TODO: enemy movement and resource display
+    },
+
     updateNPCs: function(npcs, home) {
       const time = Date.now();
       npcs.forEach((npc) => {
@@ -499,7 +536,7 @@ var mainState = {
         }
       });
       this.updateMomentum(npcs, home);
-      this.clampNPCs(this.npcs, 6, home.width - 6, 16, home.height - 16);
+      this.clampNPCs(npcs, 6, home.width - 6, 16, home.height - 16);
     },
 
     updateMomentum: function(npcs, home) {

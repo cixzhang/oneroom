@@ -13,7 +13,7 @@ window.enemies = {
           "tilewidth": 8
     },
     genNPCs: () => {
-      return Math.random() < 0.1 ? [0] : [4];
+      return Math.random() < 0.1 ? [1] : [4];
     },
     genResources: () => {
       return {
@@ -39,8 +39,8 @@ window.enemies = {
       "tilewidth": 8
     },
     genNPCs: () => {
-      const list = [3];
-      list.unshift.apply(list, _.sample([0, 1, 2], 1));
+      const list = [4];
+      list.unshift.apply(list, _.sample([1, 2, 3], 1));
       return list;
     },
     genResources: () => {
@@ -67,7 +67,7 @@ window.enemies = {
             "tilewidth": 8
     },
     genNPCs: () => {
-      const list = _.sample([0, 1, 2], 2);
+      const list = _.sample([1, 2, 3], 2);
       if (Math.random() < 0.3) list.push(3);
       return list;
     },
