@@ -4,6 +4,8 @@
 // constants/globals go here
 const RESOURCE_VALUE = 5;
 const ENEMIES_DATA = window.enemies;
+const SCREEN_WIDTH = 333;
+const SCREEN_HEIGHT = 230;
 
 var mainState = {
     preload: function() {
@@ -49,7 +51,7 @@ var mainState = {
     create: function() {
       // Here we create the game
       game.stage.backgroundColor = '#ffffff';
-      game.world.setBounds(0, 0, 1920, 1920);
+      game.world.setBounds(0, 0, (256 * 16), (256 * 16));
 
       // Start the Arcade physics system (for movements and collisions)
       game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -59,15 +61,12 @@ var mainState = {
       this.map = game.add.tilemap('tilemap');
       this.map.addTilesetImage('tileset_main_16_16', 'tiles');
       this.map.addTilesetImage('tileset_main_16_32', 'tiles');
+      this.map.addTilesetImage('tileset_main_32_16', 'tiles');
+      this.map.addTilesetImage('tileset_main_32_32', 'tiles');
 
       this.backgroundLayer1 = this.map.createLayer('tile1');
       this.backgroundLayer2 = this.map.createLayer('tile2');
       this.collisionLayer = this.map.createLayer('blocker');
-
-      // Title Screen
-      this.state = 'title';
-      this.title = game.add.sprite(0, 0, 'title');
-      this.title.alpha = 0;
 
       // collide with these tiles
       this.map.setCollisionBetween(1, 2000, true, 'blocker');
@@ -76,6 +75,8 @@ var mainState = {
       this.collisionLayer.resizeWorld();
 
       // player
+      // use player_start on Tiled to set the player's start
+      const playerStart = findObjectsByType('player_start', this.map, 'events')[0];
       this.keys = game.input.keyboard.createCursorKeys();
       this.keys.w = game.input.keyboard.addKey(Phaser.Keyboard.W);
       this.keys.s = game.input.keyboard.addKey(Phaser.Keyboard.S);
@@ -95,7 +96,7 @@ var mainState = {
         leg.animations.add('backward0', [3, 2, 1, 0]);
         leg.animations.add('backward1', [2, 1, 0, 3]);
       });
-      this.player = game.add.sprite(100, 100, 'home');
+      this.player = game.add.sprite(playerStart.x, playerStart.y, 'home');
       this.npcs = [
         new Phaser.Sprite(game, 30, 20, 'npc1'),
         new Phaser.Sprite(game, 30, 20, 'npc2'),
@@ -110,9 +111,18 @@ var mainState = {
         npc.anchor.setTo(.5, 1);
         game.physics.enable(npc, Phaser.Physics.ARCADE);
       });
-      game.camera.follow(this.player, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
       this.player.fireWaitTime = 15;
       this.player.nextFire = 0;
+
+      // Camera
+      game.camera.x = this.player.centerX - (SCREEN_WIDTH / 2);
+      game.camera.y = this.player.centerY - (SCREEN_HEIGHT / 2);
+      game.camera.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+      // Title Screen
+      this.state = 'title';
+      this.title = game.add.sprite(this.player.x - 100, this.player.y - 100, 'title');
+      this.title.alpha = 0;
 
       // resources
       this.resources = game.add.group();
@@ -179,9 +189,9 @@ var mainState = {
       });
 
       this.collectedResources = {
-        food: 16,
+        food: 30,
         wood: 0,
-        metal: 10,
+        metal: 25,
       };
 
       // Enemies
@@ -212,13 +222,15 @@ var mainState = {
       this.enemy = game.add.tileSprite(0, 0, 0, 0, 'clear', 0);
 
       // Curtains
-      this.black = game.add.sprite(0, 0, 'black', 0);
+      this.black = game.add.sprite(game.camera.x, game.camera.y, 'black', 0);
       this.black.width = game.width * 5;
       this.black.height = game.height * 5;
       game.add.tween(this.black).to({ alpha: 0 }, 500, Phaser.Easing.Linear.None, true, 800)
         .onComplete.addOnce(() => {
           game.add.tween(this.title).to({ alpha: 1 }, 500, Phaser.Easing.Linear.None, true, 0)
-            .onComplete.addOnce(() => { this.canPlay = true; });
+            .onComplete.addOnce(() => { 
+              this.canPlay = true;
+            });
           });
 
       this.hiddenAtIntro = [
@@ -227,6 +239,7 @@ var mainState = {
         this.collisionLayer,
         this.humanHealthBar,
         this.resources,
+        this.resourceHolders,
         this.resourceCounters,
         this.enemy,
         ...this.legs,
@@ -276,6 +289,7 @@ var mainState = {
           this.hiddenAtIntro.forEach(layer => {
             game.add.tween(layer).to({ alpha: 1 }, 500, Phaser.Easing.Linear.None, true, 0);
           });
+          game.camera.follow(this.player, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
         }
       }
 
