@@ -283,7 +283,7 @@ var mainState = {
       this.mooSound = soundManager.add('moo');
 
       // TESTING
-      this.spawnEnemy(playerStart.x, playerStart.y, 'double');
+      this.spawnEnemy(playerStart.x - 500, playerStart.y - 500, 'doghouse');
     },
 
     update: function() {
@@ -301,6 +301,7 @@ var mainState = {
 
       this.player.body.velocity.x = 0;
       this.player.body.velocity.y = 0;
+      this.player.enemy = {up: false, down: false, left: false, right: false};
       if (this.player.nextFire > 0) this.player.nextFire--;
 
       if (!this.canPlay) return;
@@ -334,23 +335,22 @@ var mainState = {
       // resource collection
       game.physics.arcade.overlap(this.player, this.resources, this.collectResource);
 
-      if (this.keys.left.isDown) {
+      if (this.keys.left.isDown && !this.player.enemy.left) {
         this.player.body.velocity.x = -100;
       }
-      else if (this.keys.right.isDown) {
+      else if (this.keys.right.isDown && !this.player.enemy.right) {
         this.player.body.velocity.x = 100;
       }
 
-      if (this.keys.up.isDown) {
+      if (this.keys.up.isDown && !this.player.enemy.up) {
         this.player.body.velocity.y = -100;
       }
-      else if (this.keys.down.isDown) {
+      else if (this.keys.down.isDown && !this.player.enemy.down) {
         this.player.body.velocity.y = 100;
       }
 
       // firing keys
       this.checkFire();
-
 
       this.updateLegs(this.legs, this.player);
       this.updateHumanHealth();
@@ -367,24 +367,20 @@ var mainState = {
       this.enemy.width = 0;
       this.enemy.height = 0;
       this.enemy.spawned = false;
-      this.enemy.health = null;
-      this.enemy.speed = null;
-      this.enemy.fireRate = null;
-      this.enemy.damage = 0;
+      this.enemy.info = {};
     },
 
     spawnEnemy(x, y, enemyName) {
+      const info = ENEMIES_DATA[enemyName];
       this.enemy.addChild(this.enemies[enemyName]);
       this.enemy.width = this.enemies[enemyName].width;
       this.enemy.height = this.enemies[enemyName].height;
       this.enemy.x = x;
       this.enemy.y = y;
-      this.enemy.health = this.enemies[enemyName].health;
-      this.enemy.speed = this.enemies[enemyName].speed;
-      this.enemy.fireRate = this.enemies[enemyName].fireRate;
-      this.enemy.damage = this.enemies[enemyName].damage;
-
-      const npcs = ENEMIES_DATA[enemyName].genNPCs();
+      this.enemy.health = info.health;
+      this.enemy.info = info;
+      this.enemy.body.setSize(this.enemy.width, this.enemy.height);
+      const npcs = info.genNPCs();
 
       this.enemy.npcs = npcs.map(npc => {
         const sprite = new Phaser.Sprite(game, 7, 1, `npc${npc}`);
@@ -540,11 +536,48 @@ var mainState = {
     updateEnemy: function() {
       if (!this.enemy.spawned) return;
       game.physics.arcade.collide(this.enemy, this.player);
-      this.updateNPCs(this.enemy.npcs, this.enemy);
-      this.updateLegs(this.enemy.legs, this.enemy);
       this.enemy.body.velocity.x = 0;
       this.enemy.body.velocity.y = 0;
-      // TODO: enemy movement and resource display
+      this.moveEnemy();
+      this.updateLegs(this.enemy.legs, this.enemy);
+      this.updateNPCs(this.enemy.npcs, this.enemy);
+      // TODO: enemy bullets
+      // TODO: resource display
+    },
+
+    moveEnemy() {
+      const MAX_TIME = 2000;
+      const src = [this.enemy.x + (this.enemy.width / 2), this.enemy.y + (this.enemy.height / 2)];
+      if (this.enemy.dst) {
+        this.enemy.moveTimeLimit = this.enemy.moveTimeLimit || this.time + MAX_TIME;
+        const stillMoving = this.moveToTarget(src, this.enemy.dst, this.enemy.body, this.enemy.info.speed, 150, 64);
+        if (!stillMoving || this.enemy.moveTimeLimit < this.time) {
+          this.enemy.dst = null; // generate a new dst next time
+          this.enemy.moveTimeLimit = null;
+        }
+      } else {
+        this.enemy.dst = [
+          this.player.x + (this.player.width / 2) + _.random(-200, 200),
+          this.player.y + (this.player.height / 2) + _.random(-200, 200)];
+      }
+    },
+
+    moveToTarget(src, dst, body, speed, targetDistance, buffer) {
+      // Compute a directional vector
+      const vec = [dst[0] - src[0], dst[1] - src[1]];
+      const vecLength = Math.sqrt((vec[0] * vec[0]) + (vec[1] * vec[1]));
+      const unitVec = [vec[0] / vecLength, vec[1] / vecLength];
+
+      const distance = Math.sqrt((vec[0] * vec[0]) + (vec[1] * vec[1]));
+      const delta = distance - targetDistance;
+      let direction = 0;
+      if (delta < -buffer) { direction = -1; }
+      if (delta > buffer) { direction = 1; }
+
+      body.velocity.x = Math.floor(direction * unitVec[0] * speed);
+      body.velocity.y = Math.floor(direction * unitVec[1] * speed);
+
+      return direction;
     },
 
     updateNPCs: function(npcs, home) {
