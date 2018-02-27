@@ -97,6 +97,8 @@ var mainState = {
         leg.animations.add('backward1', [2, 1, 0, 3]);
       });
       this.player = game.add.sprite(playerStart.x, playerStart.y, 'home');
+      this.fairy = new Phaser.Sprite(game, 32, 32, 'clear', 0); // fairy for the camera
+      this.player.addChild(this.fairy);
       this.npcs = [
         new Phaser.Sprite(game, 30, 20, 'npc1'),
         new Phaser.Sprite(game, 30, 20, 'npc2'),
@@ -308,7 +310,7 @@ var mainState = {
           this.hiddenAtIntro.forEach(layer => {
             game.add.tween(layer).to({ alpha: 1 }, 500, Phaser.Easing.Linear.None, true, 0);
           });
-          game.camera.follow(this.player, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
+          game.camera.follow(this.fairy, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
         }
       }
 
