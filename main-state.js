@@ -97,6 +97,7 @@ var mainState = {
         leg.animations.add('backward1', [2, 1, 0, 3]);
       });
       this.player = game.add.sprite(playerStart.x, playerStart.y, 'home');
+      this.player.health = 100;
       this.fairy = new Phaser.Sprite(game, 32, 32, 'clear', 0); // fairy for the camera
       this.player.addChild(this.fairy);
       this.npcs = [
@@ -212,9 +213,10 @@ var mainState = {
             // draw each tile
             if (tile.tile === -1) return;
             const tSprite = new Phaser.Sprite(game, tile.x * enemy.map.tilewidth, tile.y * enemy.map.tileheight, 'home_sprites', tile.tile);
-            tSprite.anchor.setTo(0.5, 0.5);
+            tSprite.anchor.setTo(0, 0);
             if (tile.flipX) {
               tSprite.scale.x = -1;
+              tSprite.x += enemy.map.tilewidth;
             }
             sprite.addChild(tSprite);
           });
@@ -281,7 +283,7 @@ var mainState = {
       this.mooSound = soundManager.add('moo');
 
       // TESTING
-      this.spawnEnemy(playerStart.x, playerStart.y, 'doghouse');
+      this.spawnEnemy(playerStart.x, playerStart.y, 'double');
     },
 
     update: function() {
@@ -294,7 +296,7 @@ var mainState = {
 
       game.physics.arcade.collide(this.player, this.collisionLayer);
       game.physics.arcade.collide(this.enemy, this.collisionLayer);
-      game.physics.arcade.collide(this.player, this.enemy);
+
       this.updateNPCs(this.npcs, this.player);
 
       this.player.body.velocity.x = 0;
@@ -328,7 +330,7 @@ var mainState = {
       });
 
       // resourceHolder destruction
-      game.physics.arcade.overlap(this.playerBullets, this.resourceHolders, this.damageOther);
+      game.physics.arcade.overlap(this.playerBullets, this.resourceHolders, this.damageOtherWithBullet);
       // resource collection
       game.physics.arcade.overlap(this.player, this.resources, this.collectResource);
 
@@ -365,6 +367,10 @@ var mainState = {
       this.enemy.width = 0;
       this.enemy.height = 0;
       this.enemy.spawned = false;
+      this.enemy.health = null;
+      this.enemy.speed = null;
+      this.enemy.fireRate = null;
+      this.enemy.damage = 0;
     },
 
     spawnEnemy(x, y, enemyName) {
@@ -373,6 +379,10 @@ var mainState = {
       this.enemy.height = this.enemies[enemyName].height;
       this.enemy.x = x;
       this.enemy.y = y;
+      this.enemy.health = this.enemies[enemyName].health;
+      this.enemy.speed = this.enemies[enemyName].speed;
+      this.enemy.fireRate = this.enemies[enemyName].fireRate;
+      this.enemy.damage = this.enemies[enemyName].damage;
 
       const npcs = ENEMIES_DATA[enemyName].genNPCs();
 
@@ -529,6 +539,7 @@ var mainState = {
 
     updateEnemy: function() {
       if (!this.enemy.spawned) return;
+      game.physics.arcade.collide(this.enemy, this.player);
       this.updateNPCs(this.enemy.npcs, this.enemy);
       this.updateLegs(this.enemy.legs, this.enemy);
       this.enemy.body.velocity.x = 0;
@@ -598,7 +609,7 @@ var mainState = {
       }, 500, Phaser.Easing.Linear.None, true, 0);
     },
 
-    damageOther: function(bullet, other) {
+    damageOtherWithBullet: function(bullet, other) {
       other.health -= bullet.damage;
       bullet.kill();
     },
