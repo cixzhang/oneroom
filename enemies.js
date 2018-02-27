@@ -1,6 +1,9 @@
 window.enemies = {
   doghouse: {
-    health: 2,
+    health: 20,
+    speed: 200,
+    damage: 5,
+    fireRate: 1000,
     map: {
           "tileswide": 3,
           "tileheight": 8,
@@ -25,7 +28,10 @@ window.enemies = {
   },
 
   single: {
-    health: 4,
+    health: 40,
+    speed: 150,
+    damage: 8,
+    fireRate: 800,
     map: {
           "tileswide": 6,
           "tileheight": 8,
@@ -53,7 +59,10 @@ window.enemies = {
   },
 
   double: {
-    health: 8,
+    health: 80,
+    speed: 100,
+    damage: 10,
+    fireRate: 500,
     map: {
           "tileswide": 6,
             "tileheight": 8,
