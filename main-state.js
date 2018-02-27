@@ -121,7 +121,9 @@ var mainState = {
 
       // Title Screen
       this.state = 'title';
-      this.title = game.add.sprite(this.player.x - 100, this.player.y - 100, 'title');
+      this.title = game.add.sprite((SCREEN_WIDTH / 2) - (133.5), (SCREEN_HEIGHT / 2) - 120, 'title');
+      this.title.fixedToCamera = true;
+      this.player.bringToTop()
       this.title.alpha = 0;
 
       // resources
@@ -236,9 +238,10 @@ var mainState = {
       this.enemy.bringToTop();
 
       // Curtains
-      this.black = game.add.sprite(game.camera.x, game.camera.y, 'black', 0);
-      this.black.width = game.width * 5;
-      this.black.height = game.height * 5;
+      this.black = game.add.sprite(0, 0, 'black', 0);
+      this.black.width = game.width;
+      this.black.height = game.height;
+      this.black.fixedToCamera = true;
       game.add.tween(this.black).to({ alpha: 0 }, 500, Phaser.Easing.Linear.None, true, 800)
         .onComplete.addOnce(() => {
           game.add.tween(this.title).to({ alpha: 1 }, 500, Phaser.Easing.Linear.None, true, 0)
@@ -276,7 +279,7 @@ var mainState = {
       this.mooSound = soundManager.add('moo');
 
       // TESTING
-      this.spawnEnemy(200, 200, 'doghouse');
+      this.spawnEnemy(playerStart.x, playerStart.y, 'doghouse');
     },
 
     update: function() {
