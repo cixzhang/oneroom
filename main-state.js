@@ -701,6 +701,7 @@ var mainState = {
         });
 
         let bullet = bulletGroup.create(x, y, bulletGroup.sprite);
+        bullet.body.setSize(4, 4);
         fireSprite.alignIn(bullet, Phaser.TOP_CENTER, 2);
         fireSprite.anchor.setTo(0.5, 0.5);
         fireSprite.angle = angle + 90;
@@ -722,6 +723,13 @@ var mainState = {
       game.add.tween(this.black).to({ alpha: 1 }, 4000, Phaser.Easing.Linear.None, true, 0)
                   .onComplete.addOnce(() => { game.state.start('credit'); });
     },
+
+    // uncomment for bullet debug
+    // render: function() {
+    //   this.playerBullets.forEach((bullet) => {
+    //     game.debug.body(bullet);
+    //   });
+    // },
 };
 
 // adds resources to the group
