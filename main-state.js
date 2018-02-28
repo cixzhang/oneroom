@@ -572,8 +572,8 @@ var mainState = {
       if (!this.enemy.spawned) return;
       if (this.enemy.nextFire > 0) this.enemy.nextFire--;
       if (this.enemy.health <= 0) {
+        this.splayResources(this.enemy.resources, this.enemy.centerX, this.enemy.centerY);
         this.despawnEnemy();
-        console.log('Enemy down');
         return;
       }
       game.physics.arcade.collide(this.enemy, this.player);
@@ -735,26 +735,34 @@ var mainState = {
     },
 
     dropResources: function(callingSprite, resourceType, number) {
+      originX = callingSprite.centerX;
+      originY = callingSprite.centerY;
+
+      this.splayResources({ [resourceType]: number }, originX, originY);
+      callingSprite.destroy();
+    },
+
+    // resourceCountMap should look like { food: 1, wood: 2, metal: 88 }
+    splayResources(resourceCountMap, x, y) {
       const resourceMap = {
         food: [0,1],
         wood: [2,3],
         metal: [4,5]
       };
 
-      originX = callingSprite.centerX;
-      originY = callingSprite.centerY;
-
-      for (i = 0; i < number; i++) {
-        resource = this.resources.create(originX, originY, 'resources');
-        resource.kind = resourceType;
-        resource.animations.add('flash', resourceMap[resourceType], 4, true);
-        resource.animations.play('flash');
-        game.add.tween(resource).to({
-          x: _.random(resource.x - 50, resource.x + 50),
-          y: _.random(resource.y - 50, resource.y + 50),
-        }, 200, Phaser.Easing.Linear.None, true);
-      }
-      callingSprite.destroy();
+      _.each(resourceCountMap, (count, key) => {
+        if (count < 1) return;
+        for (i = 0; i < count; i++) {
+          const resource = this.resources.create(x, y, 'resources');
+          resource.kind = key;
+          resource.animations.add('flash', resourceMap[key], 4, true);
+          resource.animations.play('flash');
+          game.add.tween(resource).to({
+            x: _.random(resource.x - 50, resource.x + 50),
+            y: _.random(resource.y - 50, resource.y + 50),
+          }, 200, Phaser.Easing.Linear.None, true);
+        }
+      });
     },
 
     collectResource: function(player, resource) {
