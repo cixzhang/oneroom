@@ -930,9 +930,13 @@ var mainState = {
     handleEnd(win) {
       // TODO: win/lose message
       if (!win) {
-        game.add.tween(this.player).to({ tint: 0x222222 }, 1000, Phaser.Easing.Linear.None, true, 0);
+        this.legs.forEach(leg => {
+          game.add.tween(leg).to({ alpha: 0 }, 200, Phaser.Easing.Linear.None, true, 0);
+        });
+        game.add.tween(this.player).to({ alpha: 0.1 }, 1000, Phaser.Easing.Linear.None, true, 0);
       }
-      game.add.tween(this.black).to({ alpha: 1 }, 4000, Phaser.Easing.Linear.None, true, 0)
+
+      game.add.tween(this.black).to({ alpha: 1 }, 2000, Phaser.Easing.Linear.None, true, 0)
                   .onComplete.addOnce(() => { game.state.start('credit'); });
     },
 
