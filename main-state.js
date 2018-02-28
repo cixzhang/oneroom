@@ -359,8 +359,9 @@ var mainState = {
       // resource collection
       game.physics.arcade.overlap(this.player, this.resources, this.collectResource);
 
-      // hitting enemies
+      // enemies and bullets
       game.physics.arcade.overlap(this.playerBullets, this.enemy, this.damageOtherWithBullet);
+      game.physics.arcade.overlap(this.enemyBullets, this.player, this.damageOtherWithBullet);
 
       if (this.keys.left.isDown && !this.player.enemy.left) {
         this.player.body.velocity.x = -100;
