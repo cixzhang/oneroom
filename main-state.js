@@ -70,8 +70,8 @@ var mainState = {
       this.map.addTilesetImage('tileset_main_32_32', 'tiles');
 
       this.backgroundLayer1 = this.map.createLayer('tile1');
-      this.backgroundLayer2 = this.map.createLayer('tile2');
       this.collisionLayer = this.map.createLayer('blocker');
+      this.backgroundLayer2 = this.map.createLayer('tile2');
 
       // collide with these tiles
       this.map.setCollisionBetween(1, 2000, true, 'blocker');
