@@ -6,6 +6,11 @@ const RESOURCE_VALUE = 5;
 const ENEMIES_DATA = window.enemies;
 const SCREEN_WIDTH = 333;
 const SCREEN_HEIGHT = 230;
+const RESOURCE_SPRITE_INDICES = {
+  food: [0,1],
+  wood: [2,3],
+  metal: [4,5]
+};
 
 var mainState = {
     preload: function() {
@@ -139,19 +144,21 @@ var mainState = {
       this.resourceCounters.x = 3;
       this.resourceCounters.y = 53;
 
-      const resourceNames = ['food', 'wood', 'metal'];
-      [0, 2, 4].forEach((resource, i) => {
+      let i = 0;
+      _.each(RESOURCE_SPRITE_INDICES, (indices, resource) => {
         const counter = new Phaser.Group(game, this.resourceCounters);
-        const icon = new Phaser.Sprite(game, 0, 0, 'resources', resource);
+        const icon = new Phaser.Sprite(game, 0, 0, 'resources', indices[0]);
         icon.scale.x = 0.25;
         icon.scale.y = 0.25;
         counter.addChild(icon);
         counter.x = 20 * i + 2;
         counter.y = 2;
 
-        this[resourceNames[i]+'Counter'] = new Phaser.Group(game, counter);
-        this[resourceNames[i]+'Counter'].x = 2;
-        this[resourceNames[i]+'Counter'].y = -2;
+        this[resource+'Counter'] = new Phaser.Group(game, counter);
+        this[resource+'Counter'].x = 2;
+        this[resource+'Counter'].y = -2;
+
+        i++;
       });
 
       this.player.addChild(this.resourceCounters);
@@ -300,7 +307,7 @@ var mainState = {
       this.mooSound = soundManager.add('moo');
 
       // TESTING
-      this.spawnEnemy(playerStart.x - 500, playerStart.y - 500, 'doghouse');
+      this.spawnEnemy(playerStart.x - 400, playerStart.y - 400, 'double');
     },
 
     update: function() {
@@ -419,6 +426,24 @@ var mainState = {
         return sprite;
       });
       this.enemy.resources = info.genResources();
+
+      let i = 0;
+      const numResourceTypes = _.chain(this.enemy.resources)
+        .values().compact().value().length
+
+      _.each(this.enemy.resources, (count, resource) => {
+        if (count < 1) return;
+        const spriteIndex = RESOURCE_SPRITE_INDICES[resource][0];
+        const icon = new Phaser.Sprite(game, 0, 0, 'resources', spriteIndex);
+        icon.anchor.setTo(.5, .5);
+        const pW = this.enemy.width / (numResourceTypes + 1);
+        icon.x = pW * (i + 1);
+        icon.y = this.enemy.height - 8;
+        icon.scale.x = 0.5;
+        icon.scale.y = 0.5;
+        this.enemy.addChild(icon);
+        i++;
+      });
       this.enemyBullets.damage = info.damage;
       this.enemy.spawned = true;
     },
@@ -744,11 +769,7 @@ var mainState = {
 
     // resourceCountMap should look like { food: 1, wood: 2, metal: 88 }
     splayResources(resourceCountMap, x, y) {
-      const resourceMap = {
-        food: [0,1],
-        wood: [2,3],
-        metal: [4,5]
-      };
+      const resourceMap = RESOURCE_SPRITE_INDICES;
 
       _.each(resourceCountMap, (count, key) => {
         if (count < 1) return;

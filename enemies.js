@@ -20,9 +20,9 @@ window.enemies = {
     },
     genResources: () => {
       return {
-        food: _.random(1, 3),
+        food: _.random(4, 6),
         wood: _.random(0, 1),
-        metal: Math.max(0, _.random(0, 2) - 1),
+        metal: 0,
       };
     },
   },
@@ -52,7 +52,7 @@ window.enemies = {
     genResources: () => {
       return {
         food: _.random(2, 5),
-        wood: _.random(1, 2),
+        wood: _.random(4, 6),
         metal: _.random(0, 2),
       };
     },
@@ -84,7 +84,7 @@ window.enemies = {
       return {
         food: _.random(3, 6),
         wood: _.random(2, 4),
-        metal: _.random(1, 3),
+        metal: _.random(4, 6),
       };
     },
   },
