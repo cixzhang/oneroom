@@ -79,6 +79,22 @@ var mainState = {
       // sets the size of the game world, doesn't affect the canvas...
       this.collisionLayer.resizeWorld();
 
+      // resource holders
+      this.resourceHolders = game.add.group();
+      this.resourceHolders.enableBody = true;
+      createResourceHolders(this.resourceHolders, this.map);
+      this.resourceHolders.children.forEach((sprite) => {
+        sprite.body.immovable = true;
+        // this is ugly...if you have any other ideas, please let me know
+        sprite.onDestroy = this.dropResources.bind(this);
+      });
+
+      // Title Screen
+      this.state = 'title';
+      this.title = game.add.sprite((SCREEN_WIDTH / 2) - (133.5), (SCREEN_HEIGHT / 2) - 120, 'title');
+      this.title.fixedToCamera = true;
+      this.title.alpha = 0;
+
       // player
       // use player_start on Tiled to set the player's start
       const playerStart = findObjectsByType('player_start', this.map, 'events')[0];
@@ -128,13 +144,6 @@ var mainState = {
       game.camera.y = this.player.centerY - (SCREEN_HEIGHT / 2);
       game.camera.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
 
-      // Title Screen
-      this.state = 'title';
-      this.title = game.add.sprite((SCREEN_WIDTH / 2) - (133.5), (SCREEN_HEIGHT / 2) - 120, 'title');
-      this.title.fixedToCamera = true;
-      this.player.bringToTop()
-      this.title.alpha = 0;
-
       // resources
       this.resources = game.add.group();
       this.resources.enableBody = true;
@@ -168,16 +177,6 @@ var mainState = {
         wood: 0,
         metal: 25,
       };
-
-      // resource holders
-      this.resourceHolders = game.add.group();
-      this.resourceHolders.enableBody = true;
-      createResourceHolders(this.resourceHolders, this.map);
-      this.resourceHolders.children.forEach((sprite) => {
-        sprite.body.immovable = true;
-        // this is ugly...if you have any other ideas, please let me know
-        sprite.onDestroy = this.dropResources.bind(this);
-      });
 
       // projectiles
       this.playerBullets = game.add.group();
@@ -309,6 +308,7 @@ var mainState = {
       });
       this.mooSound = soundManager.add('moo');
 
+      this.canMove = true;
       this.despawnEnemy();
     },
 
@@ -368,18 +368,20 @@ var mainState = {
       game.physics.arcade.overlap(this.playerBullets, this.enemy, this.damageOtherWithBullet);
       game.physics.arcade.overlap(this.enemyBullets, this.player, this.damageOtherWithBullet);
 
-      if (this.keys.left.isDown && !this.player.enemy.left) {
-        this.player.body.velocity.x = -100;
-      }
-      else if (this.keys.right.isDown && !this.player.enemy.right) {
-        this.player.body.velocity.x = 100;
-      }
+      if (this.canMove) {
+        if (this.keys.left.isDown) {
+          this.player.body.velocity.x = -100;
+        }
+        else if (this.keys.right.isDown) {
+          this.player.body.velocity.x = 100;
+        }
 
-      if (this.keys.up.isDown && !this.player.enemy.up) {
-        this.player.body.velocity.y = -100;
-      }
-      else if (this.keys.down.isDown && !this.player.enemy.down) {
-        this.player.body.velocity.y = 100;
+        if (this.keys.up.isDown) {
+          this.player.body.velocity.y = -100;
+        }
+        else if (this.keys.down.isDown) {
+          this.player.body.velocity.y = 100;
+        }
       }
 
       // firing keys
@@ -392,7 +394,6 @@ var mainState = {
       this.updateFood();
       this.updateCounters();
       this.updateEnemy();
-      this.player.bringToTop();
     },
 
     checkSpawnEnemy() {
@@ -638,7 +639,10 @@ var mainState = {
         this.collectedResources.wood = Math.max(this.collectedResources.wood - woodUsage, 0);
       }
 
-      if (this.player.health <= 0) this.handleEnd(false);
+      if (this.player.health <= 0) {
+        this.handleEnd(false);
+        this.canMove = false;
+      }
       this.healthBarAmt.width = (this.healthBar.width - 1) * Math.max(this.player.health / this.player.maxHealth, 0);
     },
 
@@ -657,7 +661,6 @@ var mainState = {
       this.checkFireFromEnemy();
       this.updateLegs(this.enemy.legs, this.enemy);
       this.updateNPCs(this.enemy.npcs, this.enemy);
-      // TODO: resource display
     },
 
     moveEnemy() {
@@ -937,7 +940,14 @@ var mainState = {
 
     handleEnd(win) {
       // TODO: win/lose message
-      game.add.tween(this.black).to({ alpha: 1 }, 4000, Phaser.Easing.Linear.None, true, 0)
+      if (!win) {
+        this.legs.forEach(leg => {
+          game.add.tween(leg).to({ alpha: 0 }, 200, Phaser.Easing.Linear.None, true, 0);
+        });
+        game.add.tween(this.player).to({ alpha: 0.1 }, 1000, Phaser.Easing.Linear.None, true, 0);
+      }
+
+      game.add.tween(this.black).to({ alpha: 1 }, 2000, Phaser.Easing.Linear.None, true, 0)
                   .onComplete.addOnce(() => { game.state.start('credit'); });
     },
 
