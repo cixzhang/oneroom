@@ -214,12 +214,14 @@ var mainState = {
         indicator.width = 1;
         this.humanHealthBar.addChild(indicator);
       });
+      this.humanHealthUpdateTime = null;
 
       this.healthBar = game.add.tileSprite(game.width / 4, 8, game.width / 2, 3, 'palette', 4); // dark blue-green
       this.healthBarAmt = new Phaser.Sprite(game, 1, 1, 'palette', 6); // blue-green
       this.healthBar.addChild(this.healthBarAmt);
       this.healthBarAmt.height = 1;
       this.healthBar.fixedToCamera = true;
+      this.healthUpdateTime = null;
 
       // Enemies
       this.enemies = {};
@@ -306,6 +308,8 @@ var mainState = {
         });
       });
       this.mooSound = soundManager.add('moo');
+
+      this.despawnEnemy();
     },
 
     update: function() {
@@ -404,10 +408,13 @@ var mainState = {
         const randomEnemy = _.sample(Object.keys(ENEMIES_DATA));
         const spawnDirX = _.sample([-1, 1]);
         const spawnDirY = _.sample([-1, 1]);
-        const spawnDeltaX = _.random(200, 400);
-        const spawnDeltaY = _.random(200, 400);
+        const spawnDeltaX = _.random(100, 200);
+        const spawnDeltaY = _.random(100, 200);
 
-        this.spawnEnemy(spawnDirX * spawnDeltaX, spawnDirY * spawnDeltaY, randomEnemy);
+        this.spawnEnemy(
+          this.player.centerX + (spawnDirX * spawnDeltaX),
+          this.player.centerY + (spawnDirY * spawnDeltaY),
+          randomEnemy);
         this.lastEnemySpawn = this.time;
       }
     },
@@ -583,7 +590,7 @@ var mainState = {
     updateHumanHealth: function() {
       const time = this.time;
 
-      this.humanHealthUpdateCheck = 1000; // Check every second
+      this.humanHealthUpdateCheck = 1200;
       this.humanHealthUpdateTime = this.humanHealthUpdateTime || time;
 
       if (time > this.humanHealthUpdateTime + this.humanHealthUpdateCheck) {
@@ -614,6 +621,19 @@ var mainState = {
     },
 
     updateHealth: function () {
+      this.healthUpdateCheck = 800;
+      this.healthUpdateTime = this.healthUpdateTime || this.time;
+
+      const woodUsage = 2;
+      const healthMissing = this.player.health < this.player.maxHealth;
+      const hasEnoughWood = this.collectedResources.wood >= woodUsage;
+      const checkReady = this.time > this.healthUpdateTime + this.healthUpdateCheck;
+
+      if (healthMissing && hasEnoughWood && checkReady) {
+        this.healthUpdateTime = this.time;
+        this.player.setHealth(this.player.health + 1.5);
+        this.collectedResources.wood = Math.max(this.collectedResources.wood - woodUsage, 0);
+      }
       this.healthBarAmt.width = (this.healthBar.width - 1) * (this.player.health / this.player.maxHealth);
     },
 
