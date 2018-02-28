@@ -38,12 +38,14 @@ var mainState = {
       game.load.spritesheet('fire', 'assets/sprites/fire.png', 8, 16, 12);
       game.load.spritesheet('symbols', 'assets/sprites/symbols.png', 9, 12);
       game.load.spritesheet('symbols_small', 'assets/sprites/symbols_small.png', 4, 6);
+      game.load.image('goldenRock', 'assets/sprites/golden.png');
       // sounds
       game.load.audio('collect', 'assets/sound/collect.wav');
       game.load.audio('walk1', 'assets/sound/walk1.wav');
       game.load.audio('walk2', 'assets/sound/walk2.wav');
       game.load.audio('moo', 'assets/sound/moo.wav');
       game.load.audio('gun', 'assets/sound/gun.wav');
+      game.load.audio('boom', 'assets/sound/boom.wav');
 
       // game scaling
       game.scale.scaleMode = Phaser.ScaleManager.USER_SCALE;
@@ -88,6 +90,13 @@ var mainState = {
         // this is ugly...if you have any other ideas, please let me know
         sprite.onDestroy = this.dropResources.bind(this);
       });
+
+      // set up win
+      const winPoint = findObjectsByType('goldenRock', this.map, 'events')[0]
+      this.goldenRock = game.add.sprite(winPoint.x, winPoint.y, 'goldenRock');
+      this.goldenRock.health = 150;
+      this.goldenRock.enableBody = true;
+      this.goldenRock.immovable = true;
 
       // Title Screen
       this.state = 'title';
@@ -364,6 +373,9 @@ var mainState = {
       game.physics.arcade.overlap(this.playerBullets, this.enemy, this.damageOtherWithBullet);
       game.physics.arcade.overlap(this.enemyBullets, this.player, this.damageOtherWithBullet);
 
+      // win condition
+      game.physics.arcade.overlap(this.playerBullets, this.goldenRock, this.damageOtherWithBullet);
+
       if (this.canMove) {
         if (this.keys.left.isDown) {
           this.player.body.velocity.x = -100;
@@ -390,6 +402,21 @@ var mainState = {
       this.updateFood();
       this.updateCounters();
       this.updateEnemy();
+      this.checkWin();
+    },
+
+    checkWin() {
+      if (this.goldenRock.health <= 0) {
+        win_tween = game.add.tween(this.goldenRock).to({
+          width: 1000,
+          height: 0,
+          x: 0,
+          y: 100
+        }, 800, Phaser.Easing.Linear.None, true, 0);
+        soundManager.play('boom');
+        this.goldenRock.health = 1000;
+        this.handleEnd(true);
+      }
     },
 
     checkSpawnEnemy() {
@@ -952,9 +979,11 @@ var mainState = {
 
     // uncomment for bullet debug
     // render: function() {
-    //   this.playerBullets.forEach((bullet) => {
-    //     game.debug.body(bullet);
-    //   });
+    //   // this.playerBullets.forEach((bullet) => {
+    //   //   game.debug.body(bullet);
+    //   // });
+    //   game.debug.body(this.player);
+    //   game.debug.body(this.goldenRock);
     // },
 };
 
