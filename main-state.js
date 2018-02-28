@@ -6,6 +6,11 @@ const RESOURCE_VALUE = 5;
 const ENEMIES_DATA = window.enemies;
 const SCREEN_WIDTH = 333;
 const SCREEN_HEIGHT = 230;
+const RESOURCE_SPRITE_INDICES = {
+  food: [0,1],
+  wood: [2,3],
+  metal: [4,5]
+};
 
 var mainState = {
     preload: function() {
@@ -98,6 +103,7 @@ var mainState = {
       });
       this.player = game.add.sprite(playerStart.x, playerStart.y, 'home');
       this.player.health = 100;
+      this.player.maxHealth = 100;
       this.fairy = new Phaser.Sprite(game, 32, 32, 'clear', 0); // fairy for the camera
       this.player.addChild(this.fairy);
       this.npcs = [
@@ -138,22 +144,30 @@ var mainState = {
       this.resourceCounters.x = 3;
       this.resourceCounters.y = 53;
 
-      const resourceNames = ['food', 'wood', 'metal'];
-      [0, 2, 4].forEach((resource, i) => {
+      let i = 0;
+      _.each(RESOURCE_SPRITE_INDICES, (indices, resource) => {
         const counter = new Phaser.Group(game, this.resourceCounters);
-        const icon = new Phaser.Sprite(game, 0, 0, 'resources', resource);
+        const icon = new Phaser.Sprite(game, 0, 0, 'resources', indices[0]);
         icon.scale.x = 0.25;
         icon.scale.y = 0.25;
         counter.addChild(icon);
         counter.x = 20 * i + 2;
         counter.y = 2;
 
-        this[resourceNames[i]+'Counter'] = new Phaser.Group(game, counter);
-        this[resourceNames[i]+'Counter'].x = 2;
-        this[resourceNames[i]+'Counter'].y = -2;
+        this[resource+'Counter'] = new Phaser.Group(game, counter);
+        this[resource+'Counter'].x = 2;
+        this[resource+'Counter'].y = -2;
+
+        i++;
       });
 
       this.player.addChild(this.resourceCounters);
+
+      this.collectedResources = {
+        food: 30,
+        wood: 0,
+        metal: 25,
+      };
 
       // resource holders
       this.resourceHolders = game.add.group();
@@ -174,6 +188,14 @@ var mainState = {
       this.playerBullets.velocity = 600;
       this.playerBullets.damage = 10;
 
+      this.enemyBullets = game.add.group();
+      this.enemyBullets.enableBody = true;
+      this.enemyBullets.physicsBodyType = Phaser.Physics.ARCADE;
+      this.enemyBullets.sprite = 'bullet';
+      this.enemyBullets.fireSprite = 'fire';
+      this.enemyBullets.velocity = 600;
+      this.enemyBullets.damage = 0;
+      this.enemyBullets.tint = 0xEE2222;
 
       // Bars
       this.humanHealth = 100;
@@ -192,12 +214,14 @@ var mainState = {
         indicator.width = 1;
         this.humanHealthBar.addChild(indicator);
       });
+      this.humanHealthUpdateTime = null;
 
-      this.collectedResources = {
-        food: 30,
-        wood: 0,
-        metal: 25,
-      };
+      this.healthBar = game.add.tileSprite(game.width / 4, 8, game.width / 2, 3, 'palette', 4); // dark blue-green
+      this.healthBarAmt = new Phaser.Sprite(game, 1, 1, 'palette', 6); // blue-green
+      this.healthBar.addChild(this.healthBarAmt);
+      this.healthBarAmt.height = 1;
+      this.healthBar.fixedToCamera = true;
+      this.healthUpdateTime = null;
 
       // Enemies
       this.enemies = {};
@@ -234,12 +258,14 @@ var mainState = {
       ];
       this.enemy.legs.forEach((leg) => {
         leg.anchor.setTo(0, .5);
+        leg.visible = false;
         leg.animations.add('forward0', [0, 1, 2, 3]);
         leg.animations.add('forward1', [3, 0, 1, 2]);
         leg.animations.add('backward0', [3, 2, 1, 0]);
         leg.animations.add('backward1', [2, 1, 0, 3]);
       });
       this.enemy.bringToTop();
+      this.lastEnemySpawn = null;
 
       // Curtains
       this.black = game.add.sprite(0, 0, 'black', 0);
@@ -259,6 +285,7 @@ var mainState = {
         this.backgroundLayer2,
         this.collisionLayer,
         this.humanHealthBar,
+        this.healthBar,
         this.resources,
         this.resourceHolders,
         this.resourceCounters,
@@ -282,8 +309,7 @@ var mainState = {
       });
       this.mooSound = soundManager.add('moo');
 
-      // TESTING
-      this.spawnEnemy(playerStart.x - 500, playerStart.y - 500, 'doghouse');
+      this.despawnEnemy();
     },
 
     update: function() {
@@ -335,6 +361,10 @@ var mainState = {
       // resource collection
       game.physics.arcade.overlap(this.player, this.resources, this.collectResource);
 
+      // enemies and bullets
+      game.physics.arcade.overlap(this.playerBullets, this.enemy, this.damageOtherWithBullet);
+      game.physics.arcade.overlap(this.enemyBullets, this.player, this.damageOtherWithBullet);
+
       if (this.keys.left.isDown && !this.player.enemy.left) {
         this.player.body.velocity.x = -100;
       }
@@ -352,12 +382,41 @@ var mainState = {
       // firing keys
       this.checkFire();
 
+      this.checkSpawnEnemy();
       this.updateLegs(this.legs, this.player);
       this.updateHumanHealth();
+      this.updateHealth();
       this.updateFood();
       this.updateCounters();
       this.updateEnemy();
       this.player.bringToTop();
+    },
+
+    checkSpawnEnemy() {
+      const SPAWN_RATE = 15000;
+      this.lastEnemySpawn = this.lastEnemySpawn || this.time;
+      if (this.lastEnemySpawn + SPAWN_RATE < this.time) {
+        if (this.enemy.spawned) {
+          // check if the enemy distance is far (enemy is stuck)
+          const distance = Math.sqrt(
+            Math.pow(this.enemy.x - this.player.x, 2) +
+            Math.pow(this.enemy.y - this.player.y, 2));
+          if (distance > 250) this.despawnEnemy();
+          else this.lastEnemySpawn = this.time;
+          return;
+        }
+        const randomEnemy = _.sample(Object.keys(ENEMIES_DATA));
+        const spawnDirX = _.sample([-1, 1]);
+        const spawnDirY = _.sample([-1, 1]);
+        const spawnDeltaX = _.random(100, 200);
+        const spawnDeltaY = _.random(100, 200);
+
+        this.spawnEnemy(
+          this.player.centerX + (spawnDirX * spawnDeltaX),
+          this.player.centerY + (spawnDirY * spawnDeltaY),
+          randomEnemy);
+        this.lastEnemySpawn = this.time;
+      }
     },
 
     despawnEnemy() {
@@ -368,6 +427,12 @@ var mainState = {
       this.enemy.height = 0;
       this.enemy.spawned = false;
       this.enemy.info = {};
+      this.enemy.resources = null;
+      this.enemy.nextFire = 0;
+      this.enemy.fireWaitTime = 0;
+      this.enemy.moveTimeLimit = null;
+      this.enemyBullets.damage = 0;
+      this.enemy.legs.forEach(leg => leg.visible = false);
     },
 
     spawnEnemy(x, y, enemyName) {
@@ -379,6 +444,8 @@ var mainState = {
       this.enemy.y = y;
       this.enemy.health = info.health;
       this.enemy.info = info;
+      this.enemy.nextFire = 0;
+      this.enemy.fireWaitTime = info.fireRate;
       this.enemy.body.setSize(this.enemy.width, this.enemy.height);
       const npcs = info.genNPCs();
 
@@ -389,7 +456,26 @@ var mainState = {
         game.physics.enable(sprite, Phaser.Physics.ARCADE);
         return sprite;
       });
-      this.enemy.resources = ENEMIES_DATA[enemyName].genResources();
+      this.enemy.resources = info.genResources();
+
+      let i = 0;
+      const numResourceTypes = _.chain(this.enemy.resources)
+        .values().compact().value().length
+
+      _.each(this.enemy.resources, (count, resource) => {
+        if (count < 1) return;
+        const spriteIndex = RESOURCE_SPRITE_INDICES[resource][0];
+        const icon = new Phaser.Sprite(game, 0, 0, 'resources', spriteIndex);
+        icon.anchor.setTo(.5, .5);
+        const pW = this.enemy.width / (numResourceTypes + 1);
+        icon.x = pW * (i + 1);
+        icon.y = this.enemy.height - 8;
+        icon.scale.x = 0.5;
+        icon.scale.y = 0.5;
+        this.enemy.addChild(icon);
+        i++;
+      });
+      this.enemyBullets.damage = info.damage;
       this.enemy.spawned = true;
     },
 
@@ -455,6 +541,7 @@ var mainState = {
         leg.x = home.x + legProps[i].x + vX / 60;
         leg.y = home.y + legProps[i].y + vY / 60;
         leg.scale.x = legProps[i].scaleX;
+        leg.visible = true;
 
         if (vX || vY) {
           let direction = 'forward';
@@ -501,9 +588,9 @@ var mainState = {
     },
 
     updateHumanHealth: function() {
-      const time = Date.now();
+      const time = this.time;
 
-      this.humanHealthUpdateCheck = 1000; // Check every second
+      this.humanHealthUpdateCheck = 1200;
       this.humanHealthUpdateTime = this.humanHealthUpdateTime || time;
 
       if (time > this.humanHealthUpdateTime + this.humanHealthUpdateCheck) {
@@ -530,18 +617,43 @@ var mainState = {
         }
       }
 
-      this.humanHealthBarAmt.width = (this.humanHealthBar.width - 2) * (this.humanHealth / 100);
+      this.humanHealthBarAmt.width = (this.humanHealthBar.width - 1) * (this.humanHealth / 100);
+    },
+
+    updateHealth: function () {
+      this.healthUpdateCheck = 800;
+      this.healthUpdateTime = this.healthUpdateTime || this.time;
+
+      const woodUsage = 2;
+      const healthMissing = this.player.health < this.player.maxHealth;
+      const hasEnoughWood = this.collectedResources.wood >= woodUsage;
+      const checkReady = this.time > this.healthUpdateTime + this.healthUpdateCheck;
+
+      if (healthMissing && hasEnoughWood && checkReady) {
+        this.healthUpdateTime = this.time;
+        this.player.setHealth(this.player.health + 1.5);
+        this.collectedResources.wood = Math.max(this.collectedResources.wood - woodUsage, 0);
+      }
+
+      if (this.player.health <= 0) this.handleEnd(false);
+      this.healthBarAmt.width = (this.healthBar.width - 1) * Math.max(this.player.health / this.player.maxHealth, 0);
     },
 
     updateEnemy: function() {
       if (!this.enemy.spawned) return;
+      if (this.enemy.nextFire > 0) this.enemy.nextFire--;
+      if (this.enemy.health <= 0) {
+        this.splayResources(this.enemy.resources, this.enemy.centerX, this.enemy.centerY);
+        this.despawnEnemy();
+        return;
+      }
       game.physics.arcade.collide(this.enemy, this.player);
       this.enemy.body.velocity.x = 0;
       this.enemy.body.velocity.y = 0;
       this.moveEnemy();
+      this.checkFireFromEnemy();
       this.updateLegs(this.enemy.legs, this.enemy);
       this.updateNPCs(this.enemy.npcs, this.enemy);
-      // TODO: enemy bullets
       // TODO: resource display
     },
 
@@ -560,6 +672,33 @@ var mainState = {
           this.player.x + (this.player.width / 2) + _.random(-200, 200),
           this.player.y + (this.player.height / 2) + _.random(-200, 200)];
       }
+    },
+
+    checkFireDirectionFromEnemy() {
+      const xOverlap = this.enemy.centerX < this.player.right && this.enemy.centerX > this.player.x;
+      const yOverlap = this.enemy.centerY < this.player.bottom && this.enemy.centerY > this.player.y;
+
+      if (xOverlap) {
+        return this.enemy.y < this.player.y ? 'down' : 'up';
+      }
+
+      if (yOverlap) {
+        return this.enemy.x < this.player.x ? 'right' : 'left';
+      }
+      return false;
+    },
+
+    checkFireFromEnemy() {
+      const direction = this.checkFireDirectionFromEnemy();
+      const directionFns = {
+        'up': () => this.fireBullet(this.enemy, this.enemyBullets, this.enemy.centerX, this.enemy.y - 8, -90),
+        'down': () => this.fireBullet(this.enemy, this.enemyBullets, this.enemy.centerX, this.enemy.bottom + 8, 90),
+        'left': () => this.fireBullet(this.enemy, this.enemyBullets, this.enemy.x - 8, this.enemy.centerY, 180),
+        'right': () => this.fireBullet(this.enemy, this.enemyBullets, this.enemy.right + 8, this.enemy.centerY, 0),
+      };
+      if (!direction) return;
+
+      directionFns[direction]();
     },
 
     moveToTarget(src, dst, body, speed, targetDistance, buffer) {
@@ -621,11 +760,7 @@ var mainState = {
     },
 
     hurtNPC: function(npc) {
-      game.add.tween(npc).to({ tint: 0xFF0000 }, 250, Phaser.Easing.Linear.None, true, 0)
-        .onComplete.addOnce(() => {
-          if (npc._isDead) return;
-          game.add.tween(npc).to({ tint: 0xFFFFFF }, 250, Phaser.Easing.Linear.None, true, 0);
-        });
+      this.pulseTint(npc, 0xFF0000, 500);
     },
 
     killNPC: function(npc) {
@@ -643,31 +778,58 @@ var mainState = {
     },
 
     damageOtherWithBullet: function(bullet, other) {
+      // Not sure why, this is is swapped for enemies
+      if (other.key === 'bullet') {
+        const hold = other;
+        other = bullet;
+        bullet = hold;
+      }
+
+      const pulseSpritesOnly = (sprite) => {
+        if (sprite instanceof Phaser.TileSprite) {
+          sprite.children.forEach(pulseSpritesOnly);
+        } else {
+          mainState.pulseTint(sprite, 0xFF0000, 300);
+        }
+      };
+
       other.health -= bullet.damage;
+      pulseSpritesOnly(other);
       bullet.kill();
     },
 
-    dropResources: function(callingSprite, resourceType, number) {
-      const resourceMap = {
-        food: [0,1],
-        wood: [2,3],
-        metal: [4,5]
-      };
+    pulseTint(sprite, tint, time) {
+      game.add.tween(sprite).to({ tint: tint }, time / 2, Phaser.Easing.Linear.None, true, 0)
+        .onComplete.addOnce(() => {
+          game.add.tween(sprite).to({ tint: 0xFFFFFF }, time / 2, Phaser.Easing.Linear.None, true, 0);
+        });
+    },
 
+    dropResources: function(callingSprite, resourceType, number) {
       originX = callingSprite.centerX;
       originY = callingSprite.centerY;
 
-      for (i = 0; i < number; i++) {
-        resource = this.resources.create(originX, originY, 'resources');
-        resource.kind = resourceType;
-        resource.animations.add('flash', resourceMap[resourceType], 4, true);
-        resource.animations.play('flash');
-        game.add.tween(resource).to({
-          x: _.random(resource.x - 50, resource.x + 50),
-          y: _.random(resource.y - 50, resource.y + 50),
-        }, 200, Phaser.Easing.Linear.None, true);
-      }
+      this.splayResources({ [resourceType]: number }, originX, originY);
       callingSprite.destroy();
+    },
+
+    // resourceCountMap should look like { food: 1, wood: 2, metal: 88 }
+    splayResources(resourceCountMap, x, y) {
+      const resourceMap = RESOURCE_SPRITE_INDICES;
+
+      _.each(resourceCountMap, (count, key) => {
+        if (count < 1) return;
+        for (i = 0; i < count; i++) {
+          const resource = this.resources.create(x, y, 'resources');
+          resource.kind = key;
+          resource.animations.add('flash', resourceMap[key], 4, true);
+          resource.animations.play('flash');
+          game.add.tween(resource).to({
+            x: _.random(resource.x - 50, resource.x + 50),
+            y: _.random(resource.y - 50, resource.y + 50),
+          }, 200, Phaser.Easing.Linear.None, true);
+        }
+      });
     },
 
     collectResource: function(player, resource) {
