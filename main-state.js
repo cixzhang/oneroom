@@ -625,7 +625,7 @@ var mainState = {
       this.healthUpdateCheck = 800;
       this.healthUpdateTime = this.healthUpdateTime || this.time;
 
-      const woodUsage = 2;
+      const woodUsage = 4;
       const healthMissing = this.player.health < this.player.maxHealth;
       const hasEnoughWood = this.collectedResources.wood >= woodUsage;
       const checkReady = this.time > this.healthUpdateTime + this.healthUpdateCheck;
