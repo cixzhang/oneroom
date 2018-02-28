@@ -263,6 +263,7 @@ var mainState = {
         leg.animations.add('backward1', [2, 1, 0, 3]);
       });
       this.enemy.bringToTop();
+      this.lastEnemySpawn = null;
 
       // Curtains
       this.black = game.add.sprite(0, 0, 'black', 0);
@@ -305,9 +306,6 @@ var mainState = {
         });
       });
       this.mooSound = soundManager.add('moo');
-
-      // TESTING
-      this.spawnEnemy(playerStart.x - 400, playerStart.y - 400, 'double');
     },
 
     update: function() {
@@ -380,6 +378,7 @@ var mainState = {
       // firing keys
       this.checkFire();
 
+      this.checkSpawnEnemy();
       this.updateLegs(this.legs, this.player);
       this.updateHumanHealth();
       this.updateHealth();
@@ -387,6 +386,30 @@ var mainState = {
       this.updateCounters();
       this.updateEnemy();
       this.player.bringToTop();
+    },
+
+    checkSpawnEnemy() {
+      const SPAWN_RATE = 15000;
+      this.lastEnemySpawn = this.lastEnemySpawn || this.time;
+      if (this.lastEnemySpawn + SPAWN_RATE < this.time) {
+        if (this.enemy.spawned) {
+          // check if the enemy distance is far (enemy is stuck)
+          const distance = Math.sqrt(
+            Math.pow(this.enemy.x - this.player.x, 2) +
+            Math.pow(this.enemy.y - this.player.y, 2));
+          if (distance > 250) this.despawnEnemy();
+          else this.lastEnemySpawn = this.time;
+          return;
+        }
+        const randomEnemy = _.sample(Object.keys(ENEMIES_DATA));
+        const spawnDirX = _.sample([-1, 1]);
+        const spawnDirY = _.sample([-1, 1]);
+        const spawnDeltaX = _.random(200, 400);
+        const spawnDeltaY = _.random(200, 400);
+
+        this.spawnEnemy(spawnDirX * spawnDeltaX, spawnDirY * spawnDeltaY, randomEnemy);
+        this.lastEnemySpawn = this.time;
+      }
     },
 
     despawnEnemy() {
