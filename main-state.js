@@ -98,6 +98,7 @@ var mainState = {
       });
       this.player = game.add.sprite(playerStart.x, playerStart.y, 'home');
       this.player.health = 100;
+      this.player.maxHealth = 100;
       this.fairy = new Phaser.Sprite(game, 32, 32, 'clear', 0); // fairy for the camera
       this.player.addChild(this.fairy);
       this.npcs = [
@@ -155,6 +156,12 @@ var mainState = {
 
       this.player.addChild(this.resourceCounters);
 
+      this.collectedResources = {
+        food: 30,
+        wood: 0,
+        metal: 25,
+      };
+
       // resource holders
       this.resourceHolders = game.add.group();
       this.resourceHolders.enableBody = true;
@@ -201,11 +208,11 @@ var mainState = {
         this.humanHealthBar.addChild(indicator);
       });
 
-      this.collectedResources = {
-        food: 30,
-        wood: 0,
-        metal: 25,
-      };
+      this.healthBar = game.add.tileSprite(game.width / 4, 8, game.width / 2, 3, 'palette', 4); // dark blue-green
+      this.healthBarAmt = new Phaser.Sprite(game, 1, 1, 'palette', 6); // blue-green
+      this.healthBar.addChild(this.healthBarAmt);
+      this.healthBarAmt.height = 1;
+      this.healthBar.fixedToCamera = true;
 
       // Enemies
       this.enemies = {};
@@ -267,6 +274,7 @@ var mainState = {
         this.backgroundLayer2,
         this.collisionLayer,
         this.humanHealthBar,
+        this.healthBar,
         this.resources,
         this.resourceHolders,
         this.resourceCounters,
@@ -362,6 +370,7 @@ var mainState = {
 
       this.updateLegs(this.legs, this.player);
       this.updateHumanHealth();
+      this.updateHealth();
       this.updateFood();
       this.updateCounters();
       this.updateEnemy();
@@ -517,7 +526,7 @@ var mainState = {
     },
 
     updateHumanHealth: function() {
-      const time = Date.now();
+      const time = this.time;
 
       this.humanHealthUpdateCheck = 1000; // Check every second
       this.humanHealthUpdateTime = this.humanHealthUpdateTime || time;
@@ -546,7 +555,11 @@ var mainState = {
         }
       }
 
-      this.humanHealthBarAmt.width = (this.humanHealthBar.width - 2) * (this.humanHealth / 100);
+      this.humanHealthBarAmt.width = (this.humanHealthBar.width - 1) * (this.humanHealth / 100);
+    },
+
+    updateHealth: function () {
+      this.healthBarAmt.width = (this.healthBar.width - 1) * (this.player.health / this.player.maxHealth);
     },
 
     updateEnemy: function() {
