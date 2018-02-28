@@ -46,6 +46,7 @@ var mainState = {
       game.load.audio('moo', 'assets/sound/moo.wav');
       game.load.audio('gun', 'assets/sound/gun.wav');
       game.load.audio('boom', 'assets/sound/boom.wav');
+      game.load.audio('main_theme', 'assets/sound/Reclaimer.ogg');
 
       // game scaling
       game.scale.scaleMode = Phaser.ScaleManager.USER_SCALE;
@@ -316,7 +317,7 @@ var mainState = {
         });
       });
       this.mooSound = soundManager.add('moo');
-
+      this.mainTheme = game.add.audio('main_theme', 0.8);
       this.canMove = true;
       this.despawnEnemy();
     },
@@ -349,6 +350,7 @@ var mainState = {
             game.add.tween(layer).to({ alpha: 1 }, 500, Phaser.Easing.Linear.None, true, 0);
           });
           game.camera.follow(this.fairy, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
+          this.mainTheme.loopFull();
         }
       }
 
@@ -965,6 +967,7 @@ var mainState = {
     },
 
     handleEnd(win) {
+      this.mainTheme.fadeOut();
       // TODO: win/lose message
       if (!win) {
         this.legs.forEach(leg => {
