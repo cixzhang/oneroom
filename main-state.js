@@ -174,6 +174,14 @@ var mainState = {
       this.playerBullets.velocity = 600;
       this.playerBullets.damage = 10;
 
+      this.enemyBullets = game.add.group();
+      this.enemyBullets.enableBody = true;
+      this.enemyBullets.physicsBodyType = Phaser.Physics.ARCADE;
+      this.enemyBullets.sprite = 'bullet';
+      this.enemyBullets.fireSprite = 'fire';
+      this.enemyBullets.velocity = 600;
+      this.enemyBullets.damage = 0;
+      this.enemyBullets.tint = 0xEE2222;
 
       // Bars
       this.humanHealth = 100;
@@ -368,6 +376,11 @@ var mainState = {
       this.enemy.height = 0;
       this.enemy.spawned = false;
       this.enemy.info = {};
+      this.enemy.resources = null;
+      this.enemy.nextFire = 0;
+      this.enemy.fireWaitTime = 0;
+      this.enemy.moveTimeLimit = null;
+      this.enemyBullets.damage = 0;
     },
 
     spawnEnemy(x, y, enemyName) {
@@ -379,6 +392,8 @@ var mainState = {
       this.enemy.y = y;
       this.enemy.health = info.health;
       this.enemy.info = info;
+      this.enemy.nextFire = 0;
+      this.enemy.fireWaitTime = info.fireRate;
       this.enemy.body.setSize(this.enemy.width, this.enemy.height);
       const npcs = info.genNPCs();
 
@@ -389,7 +404,8 @@ var mainState = {
         game.physics.enable(sprite, Phaser.Physics.ARCADE);
         return sprite;
       });
-      this.enemy.resources = ENEMIES_DATA[enemyName].genResources();
+      this.enemy.resources = info.genResources();
+      this.enemyBullets.damage = info.damage;
       this.enemy.spawned = true;
     },
 
@@ -538,10 +554,11 @@ var mainState = {
       game.physics.arcade.collide(this.enemy, this.player);
       this.enemy.body.velocity.x = 0;
       this.enemy.body.velocity.y = 0;
+      if (this.enemy.nextFire > 0) this.enemy.nextFire--;
       this.moveEnemy();
+      this.checkFireFromEnemy();
       this.updateLegs(this.enemy.legs, this.enemy);
       this.updateNPCs(this.enemy.npcs, this.enemy);
-      // TODO: enemy bullets
       // TODO: resource display
     },
 
@@ -560,6 +577,33 @@ var mainState = {
           this.player.x + (this.player.width / 2) + _.random(-200, 200),
           this.player.y + (this.player.height / 2) + _.random(-200, 200)];
       }
+    },
+
+    checkFireDirectionFromEnemy() {
+      const xOverlap = this.enemy.centerX < this.player.right && this.enemy.centerX > this.player.x;
+      const yOverlap = this.enemy.centerY < this.player.bottom && this.enemy.centerY > this.player.y;
+
+      if (xOverlap) {
+        return this.enemy.y < this.player.y ? 'down' : 'up';
+      }
+
+      if (yOverlap) {
+        return this.enemy.x < this.player.x ? 'right' : 'left';
+      }
+      return false;
+    },
+
+    checkFireFromEnemy() {
+      const direction = this.checkFireDirectionFromEnemy();
+      const directionFns = {
+        'up': () => this.fireBullet(this.enemy, this.enemyBullets, this.enemy.centerX, this.enemy.y - 8, -90),
+        'down': () => this.fireBullet(this.enemy, this.enemyBullets, this.enemy.centerX, this.enemy.bottom + 8, 90),
+        'left': () => this.fireBullet(this.enemy, this.enemyBullets, this.enemy.x - 8, this.enemy.centerY, 180),
+        'right': () => this.fireBullet(this.enemy, this.enemyBullets, this.enemy.right + 8, this.enemy.centerY, 0),
+      };
+      if (!direction) return;
+
+      directionFns[direction]();
     },
 
     moveToTarget(src, dst, body, speed, targetDistance, buffer) {

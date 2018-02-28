@@ -3,7 +3,7 @@ window.enemies = {
     health: 20,
     speed: 200,
     damage: 5,
-    fireRate: 1000,
+    fireRate: 200,
     map: {
           "tileswide": 3,
           "tileheight": 8,
@@ -31,7 +31,7 @@ window.enemies = {
     health: 40,
     speed: 150,
     damage: 8,
-    fireRate: 800,
+    fireRate: 160,
     map: {
           "tileswide": 6,
           "tileheight": 8,
@@ -62,7 +62,7 @@ window.enemies = {
     health: 80,
     speed: 100,
     damage: 10,
-    fireRate: 500,
+    fireRate: 100,
     map: {
           "tileswide": 6,
             "tileheight": 8,
