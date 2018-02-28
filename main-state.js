@@ -634,7 +634,9 @@ var mainState = {
         this.player.setHealth(this.player.health + 1.5);
         this.collectedResources.wood = Math.max(this.collectedResources.wood - woodUsage, 0);
       }
-      this.healthBarAmt.width = (this.healthBar.width - 1) * (this.player.health / this.player.maxHealth);
+
+      if (this.player.health <= 0) this.handleEnd(false);
+      this.healthBarAmt.width = (this.healthBar.width - 1) * Math.max(this.player.health / this.player.maxHealth, 0);
     },
 
     updateEnemy: function() {
