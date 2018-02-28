@@ -350,11 +350,10 @@ var mainState = {
         if (resourceHolder.health <= 0) {
           resourceHolder.onDestroy(resourceHolder, resourceHolder.resource, 4);
         }
-        const freq = _.random(500, 1200);
-        if (resourceHolder.spriteKey === 'cow' && this.frame % freq == 0 && !this.mooSound.isPlaying) {
-          this.mooSound.play();
-        }
       });
+
+      // resourceHolder collision
+      game.physics.arcade.collide(this.player, this.resourceHolders, this.collideResourceHolder);
 
       // resourceHolder destruction
       game.physics.arcade.overlap(this.playerBullets, this.resourceHolders, this.damageOtherWithBullet);
@@ -780,6 +779,14 @@ var mainState = {
       }, 500, Phaser.Easing.Linear.None, true, 0);
     },
 
+    collideResourceHolder: function(player, other) {
+      if (other.key == 'car') {
+        other.health -= 0.5;
+        soundManager.play('gun', 0.2); 
+        mainState.pulseTint(other, 0xFF0000, 300);
+      }
+    },
+
     damageOtherWithBullet: function(bullet, other) {
       // Not sure why, this is is swapped for enemies
       if (other.key === 'bullet') {
@@ -811,6 +818,9 @@ var mainState = {
     dropResources: function(callingSprite, resourceType, number) {
       originX = callingSprite.centerX;
       originY = callingSprite.centerY;
+      if (callingSprite.key == 'cow') {
+        soundManager.play('moo');
+      }
 
       this.splayResources({ [resourceType]: number }, originX, originY);
       callingSprite.destroy();
