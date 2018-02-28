@@ -946,6 +946,8 @@ var mainState = {
         game.add.tween(this.player).to({ alpha: 0.1 }, 1000, Phaser.Easing.Linear.None, true, 0);
       }
 
+      window.WIN = win;
+
       game.add.tween(this.black).to({ alpha: 1 }, 2000, Phaser.Easing.Linear.None, true, 0)
                   .onComplete.addOnce(() => { game.state.start('credit'); });
     },
