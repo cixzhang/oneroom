@@ -249,6 +249,7 @@ var mainState = {
       ];
       this.enemy.legs.forEach((leg) => {
         leg.anchor.setTo(0, .5);
+        leg.visible = false;
         leg.animations.add('forward0', [0, 1, 2, 3]);
         leg.animations.add('forward1', [3, 0, 1, 2]);
         leg.animations.add('backward0', [3, 2, 1, 0]);
@@ -351,6 +352,9 @@ var mainState = {
       // resource collection
       game.physics.arcade.overlap(this.player, this.resources, this.collectResource);
 
+      // hitting enemies
+      game.physics.arcade.overlap(this.playerBullets, this.enemy, this.damageOtherWithBullet);
+
       if (this.keys.left.isDown && !this.player.enemy.left) {
         this.player.body.velocity.x = -100;
       }
@@ -390,6 +394,7 @@ var mainState = {
       this.enemy.fireWaitTime = 0;
       this.enemy.moveTimeLimit = null;
       this.enemyBullets.damage = 0;
+      this.enemy.legs.forEach(leg => leg.visible = false);
     },
 
     spawnEnemy(x, y, enemyName) {
@@ -480,6 +485,7 @@ var mainState = {
         leg.x = home.x + legProps[i].x + vX / 60;
         leg.y = home.y + legProps[i].y + vY / 60;
         leg.scale.x = legProps[i].scaleX;
+        leg.visible = true;
 
         if (vX || vY) {
           let direction = 'forward';
@@ -564,10 +570,15 @@ var mainState = {
 
     updateEnemy: function() {
       if (!this.enemy.spawned) return;
+      if (this.enemy.nextFire > 0) this.enemy.nextFire--;
+      if (this.enemy.health <= 0) {
+        this.despawnEnemy();
+        console.log('Enemy down');
+        return;
+      }
       game.physics.arcade.collide(this.enemy, this.player);
       this.enemy.body.velocity.x = 0;
       this.enemy.body.velocity.y = 0;
-      if (this.enemy.nextFire > 0) this.enemy.nextFire--;
       this.moveEnemy();
       this.checkFireFromEnemy();
       this.updateLegs(this.enemy.legs, this.enemy);
@@ -678,11 +689,7 @@ var mainState = {
     },
 
     hurtNPC: function(npc) {
-      game.add.tween(npc).to({ tint: 0xFF0000 }, 250, Phaser.Easing.Linear.None, true, 0)
-        .onComplete.addOnce(() => {
-          if (npc._isDead) return;
-          game.add.tween(npc).to({ tint: 0xFFFFFF }, 250, Phaser.Easing.Linear.None, true, 0);
-        });
+      this.pulseTint(npc, 0xFF0000, 500);
     },
 
     killNPC: function(npc) {
@@ -700,8 +707,31 @@ var mainState = {
     },
 
     damageOtherWithBullet: function(bullet, other) {
+      // Not sure why, this is is swapped for enemies
+      if (other.key === 'bullet') {
+        const hold = other;
+        other = bullet;
+        bullet = hold;
+      }
+
+      const pulseSpritesOnly = (sprite) => {
+        if (sprite instanceof Phaser.TileSprite) {
+          sprite.children.forEach(pulseSpritesOnly);
+        } else {
+          mainState.pulseTint(sprite, 0xFF0000, 300);
+        }
+      };
+
       other.health -= bullet.damage;
+      pulseSpritesOnly(other);
       bullet.kill();
+    },
+
+    pulseTint(sprite, tint, time) {
+      game.add.tween(sprite).to({ tint: tint }, time / 2, Phaser.Easing.Linear.None, true, 0)
+        .onComplete.addOnce(() => {
+          game.add.tween(sprite).to({ tint: 0xFFFFFF }, time / 2, Phaser.Easing.Linear.None, true, 0);
+        });
     },
 
     dropResources: function(callingSprite, resourceType, number) {
