@@ -350,10 +350,6 @@ var mainState = {
         if (resourceHolder.health <= 0) {
           resourceHolder.onDestroy(resourceHolder, resourceHolder.resource, 4);
         }
-        const freq = _.random(900, 3200);
-        if (resourceHolder.spriteKey === 'cow' && this.frame % freq == 0 && !this.mooSound.isPlaying) {
-          this.mooSound.play();
-        }
       });
 
       // resourceHolder collision
@@ -822,6 +818,9 @@ var mainState = {
     dropResources: function(callingSprite, resourceType, number) {
       originX = callingSprite.centerX;
       originY = callingSprite.centerY;
+      if (callingSprite.key == 'cow') {
+        soundManager.play('moo');
+      }
 
       this.splayResources({ [resourceType]: number }, originX, originY);
       callingSprite.destroy();
