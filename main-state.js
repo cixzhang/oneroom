@@ -109,6 +109,7 @@ var mainState = {
       // use player_start on Tiled to set the player's start
       const playerStart = findObjectsByType('player_start', this.map, 'events')[0];
       this.keys = game.input.keyboard.createCursorKeys();
+      this.keys.enter = game.input.keyboard.addKey(Phaser.Keyboard.ENTER);
       this.keys.w = game.input.keyboard.addKey(Phaser.Keyboard.W);
       this.keys.s = game.input.keyboard.addKey(Phaser.Keyboard.S);
       this.keys.d = game.input.keyboard.addKey(Phaser.Keyboard.D);
@@ -343,7 +344,7 @@ var mainState = {
       if (!this.canPlay) return;
       if (this.state === 'title') {
         game.add.tween(this.title).to({ alpha: 1 }, 500, Phaser.Easing.Linear.None, true, 0);
-        if (this.keys.up.isDown) {
+        if (this.keys.up.isDown || this.keys.enter.isDown) {
           this.state = 'play';
           game.add.tween(this.title).to({ alpha: 0 }, 500, Phaser.Easing.Linear.None, true, 0);
           this.hiddenAtIntro.forEach(layer => {
